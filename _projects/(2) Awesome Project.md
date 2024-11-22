@@ -1,4 +1,4 @@
----
+<!-- ---
 name: The Movies Project
 tools: [C#, XML, WPF]
 image: https://www.sketchappsources.com/resources/source-image/movie-badges-jurajjurik.png
@@ -17,4 +17,4 @@ The Movies Project is something like **Netflix**, the only difference is that **
 
 <p class="text-center">
 {% include elements/button.html link="https://github.com/yousinix/portfolYOU" text="Learn More" %}
-</p>
+</p> -->
