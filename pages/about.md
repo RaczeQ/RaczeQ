@@ -7,7 +7,7 @@ weight: 3
 
 # **About Me**
 
-Hi I am **{{ site.author.name }}** 👋🏻<br>
+Hi I am **Kamil Raczycki** <small style="opacity: 0.5">/rachitsky/</small> 👋🏻<br>
 
 I'm data scientist specializing in the geospatial domain 🌍<br>
 
