@@ -1,0 +1,76 @@
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script src="//d3js.org/topojson.v1.min.js"></script>
+<script>
+  var width = window.innerWidth,
+    height = window.innerHeight,
+    speed = 1e-3,
+    start = Date.now();
+
+  var sphere = { type: "Sphere" };
+
+  var projection = d3.geo
+    .orthographic()
+    .scale(height / 1.2)
+    .translate([width / 4, 3 * height / 4])
+    .clipAngle(90)
+    .precision(0.5);
+
+  var graticule = d3.geo.graticule();
+
+  var canvas = d3
+    .select("body")
+    .append("canvas")
+    .attr("width", width)
+    .attr("height", height)
+    .style("position", "absolute")
+    .style("mix-blend-mode", "difference")
+    .style("z-index", "-1");
+
+  var context = canvas.node().getContext("2d");
+
+  var path = d3.geo.path().projection(projection).context(context);
+
+  d3.json(
+    "https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json",
+    function (error, topo) {
+      if (error) throw error;
+
+      var land = topojson.feature(topo, topo.objects.land),
+        grid = graticule();
+
+      d3.timer(function () {
+        projection.rotate([speed * (Date.now() - start), -0.5 * speed * (Date.now() - start)]);
+
+        context.clearRect(0, 0, width, height);
+
+        context.beginPath();
+        path(sphere);
+        context.globalAlpha = 0.4;
+        context.lineWidth = 3;
+        context.strokeStyle = "#000";
+        context.stroke();
+
+        context.beginPath();
+        path(sphere);
+        context.globalAlpha = 0.05;
+        context.fillStyle = "#fff";
+        context.fill();
+
+        context.beginPath();
+        path(land);
+        context.globalAlpha = 0.15;
+        context.fillStyle = "#fff";
+        context.fill();
+
+        context.beginPath();
+        path(grid);
+        context.globalAlpha = 1;
+        context.lineWidth = 0.5;
+        context.strokeStyle = "rgba(119,119,119,.5)";
+        context.stroke();
+      });
+    }
+  );
+
+  d3.select(self.frameElement).style("height", height + "px");
+</script>
