@@ -9,7 +9,7 @@ weight: 3
 
 Hi I am **Kamil Raczycki** <small style="opacity: 0.5">/rachitsky/</small> 👋🏻<br>
 
-I'm data scientist specializing in the geospatial domain 🌍<br>
+I'm a data scientist specializing in the geospatial domain 🌍<br>
 
 I'm maintaining multiple open-source projects dedicated to geospatial data science and data engineering, utilizing modern technologies (eg: DuckDB, GeoArrow, GeoParquet).<br>
 
