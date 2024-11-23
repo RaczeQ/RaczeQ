@@ -7,12 +7,17 @@ weight: 3
 
 # **About Me**
 
-Hi I am **{{ site.author.name }}** :wave:,<br>
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+Hi I am **{{ site.author.name }}** 👋🏻<br>
+
+I'm data scientist specializing in the geospatial domain 🌍<br>
+
+I'm maintaining multiple open-source projects dedicated to geospatial data science and data engineering, utilizing modern technologies (eg: DuckDB, GeoArrow, GeoParquet).<br>
+
+You can check my projects <a href="/projects/">here</a>.
 
 <div class="row">
-{% include about/skills.html title="Programming Skills" source=site.data.programming-skills %}
-{% include about/skills.html title="Other Skills" source=site.data.other-skills %}
+{% include about/skills.html title="Geospatial Data Science" source=site.data.geo-data-science-skills %}
+{% include about/skills.html title="Other programming skills" source=site.data.programming-skills %}
 </div>
 
 <div class="row">

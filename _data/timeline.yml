@@ -1,17 +1,48 @@
-# - title: Student, Harvard CS
-#   from: 2014
-#   to: 2018
-#   description: Lorem ipsum dolor sit amet, consectetur adipiscing elit,
-#                sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-#                Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
-#                nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in
-#                reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+- title: Senior Data Scientist, <a href="https://about.allegro.eu/">Allegro</a>, PL
+  from: Sep 2024
+  to: present
+  description: I have been promoted to the senior role after delivering geospatial projects
+    influencing platform logistics expansion. After the promotion, I have been tasked with
+    the desing and implementation of a spatial model supporting the logistics & deliveries department.
 
-# - title: Software Engineer, Google, UK
-#   from: 2018
-#   to: present
-#   description: Lorem ipsum dolor sit amet, consectetur adipiscing elit,
-#                sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-#                Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
-#                nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in
-#                reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+- title: Software Engineer & Data Scientist, <a href="https://about.allegro.eu/">Allegro</a>, PL
+  from: May 2022
+  to: Aug 2024
+  description: I have joined the Location Intelligence team at Allegro e-commerce platform
+    to help with spatial analysis for the Out-Of-Home deliveries logistics.<br>
+    I have started as a software engineer / data engineer to setup geospatial data warehouse
+    from scratch and transitioned to the data science role after almost two years at the company.
+
+- title: Spatial Data Scientist, Yoniee, PL
+  from: Jan 2022
+  to: Dec 2023
+  description: >-
+    I joined the startup Yoniee, where I was involved in the design, programming
+    and implementation of a recommendation system that generates rewards for users on a city map
+    based on their activity in the app.<br>
+    Technologies used: Python, FastAPI, Pydantic, GeoPandas, Celery, RabbitMQ, Redis, Postgres,
+    PostGIS, TimescaleDB, Overpass, Docker, Kubernetes, Rancher, Grafana.
+
+- title: Software Engineer & Data Scientist, DSR S.A., PL
+  from: Feb 2017
+  to: April 2022 
+  description: My first commercial job was at a local company DSR S.A., specializing in IT systems for
+    the manufacturing industry. I was responsible for systems integration using Enterprise Service Buses
+    and later transitioned to the full stack development of web systems supporting workers in factories.<br>
+    After finishing my data science studies, I've joined the predictive maintenance project in the company
+    as a Data Scientist.
+
+- title: Student, Wrocław University of Science and Technology
+  from: 2015
+  to: 2021
+  description: BSc in Computer Science | Msc in Data Science.<br>
+    <a href="https://kraina-ai.github.io/Transfer-learning-approach-to-bicycle-sharing-systems-station-location-planning-using-OpenStreetMap/">My thesis</a>
+    related to Bicycle-Sharing Stations location planning.<br>
+    During studies, I've met Piotr Szymański, who became the supervisor of my thesis,
+    and <a href="https://www.linkedin.com/in/piotrgramacki/">Piotr Gramacki</a>,
+    <a href="https://www.linkedin.com/in/kacper-lesniara/">Kacper Leśniara</a>,
+    <a href="https://www.linkedin.com/in/wscode/">Szymon Woźniak</a> with whom I developed
+    the <a href="https://github.com/kraina-ai/srai/">SRAI</a> library
+    and conducted research in the geospatial data science domain.
+
+

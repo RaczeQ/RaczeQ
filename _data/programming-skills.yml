@@ -1,11 +1,12 @@
-# - name: HTML5/CSS3
-#   percentage: 90
-#   color: danger
+- name: HTML5 • CSS3
+  percentage: 80
+  color: secondary
 
-# - name: Go
-#   percentage: 80
-#   color:
+- name: Angular • Typescript • SCSS
+  percentage: 70
+  color: secondary
 
-# - name: Python
-#   percentage: 70
-#   color: secondary
+- name: C# • .NET
+  percentage: 60
+  color: secondary
+

@@ -1,0 +1,19 @@
+- name: Python • NumPy • Pandas
+  percentage: 100
+  color: success
+
+- name: GeoPandas • scikit-learn • SQL
+  percentage: 90
+  color: info
+
+- name: PyTorch
+  percentage: 80
+  color: info
+
+- name: DuckDB • PyArrow • Polars
+  percentage: 70
+  color: info
+
+- name: Deck.gl
+  percentage: 50
+  color: info
