@@ -1,5 +1,5 @@
 - name: HTML5 • CSS3
-  percentage: 80
+  percentage: 90
   color: secondary
 
 - name: Angular • Typescript • SCSS
@@ -7,6 +7,6 @@
   color: secondary
 
 - name: C# • .NET
-  percentage: 60
+  percentage: 50
   color: secondary
 
