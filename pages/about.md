@@ -15,6 +15,12 @@ I'm maintaining multiple open-source projects dedicated to geospatial data scien
 
 You can check my projects <a href="/projects/">here</a>.
 
+You can find me on these platforms:
+
+<div class="row" style="font-size: x-large;">
+{% include social.html unfocused_color="#fff" %}
+</div>
+
 <div class="row">
 {% include about/skills.html title="Geospatial Data Science" source=site.data.geo-data-science-skills %}
 {% include about/skills.html title="Other programming skills" source=site.data.programming-skills %}
