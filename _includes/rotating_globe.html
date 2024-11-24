@@ -2,7 +2,7 @@
 <script src="//d3js.org/topojson.v1.min.js"></script>
 <script>
   var width = window.innerWidth,
-    height = Math.max(document.documentElement.clientHeight, document.documentElement.scrollHeight || 0, window.innerHeight || 0), 
+    height = window.innerHeight, 
     speed = 2e-3,
     start_latitude = 10 * (-12 + Math.floor(Math.random() * 26)),
     start = Date.now();
@@ -22,7 +22,7 @@
     .select("body")
     .append("canvas")
     .attr("width", width)
-    .attr("height", height)
+    .attr("height", height * 1.1)
     .style("position", "fixed")
     .style("left", "0")
     .style("top", "0")
