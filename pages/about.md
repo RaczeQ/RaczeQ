@@ -23,3 +23,4 @@ You can check my projects <a href="/projects/">here</a>.
 <div class="row">
 {% include about/timeline.html %}
 </div>
+{% include rotating_globe.html opacity=0.2 %}
