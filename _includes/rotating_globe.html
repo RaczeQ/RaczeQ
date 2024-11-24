@@ -66,6 +66,13 @@
         context.fill();
 
         context.beginPath();
+        path(land);
+        context.globalAlpha = 0.2;
+        context.lineWidth = 0.5;
+        context.strokeStyle = "#fff";
+        context.stroke();
+
+        context.beginPath();
         path(grid);
         context.globalAlpha = 0.5;
         context.lineWidth = 0.5;
