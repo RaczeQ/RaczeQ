@@ -3,7 +3,8 @@
 <script>
   var width = window.innerWidth,
     height = window.innerHeight,
-    speed = 1e-3,
+    speed = 2e-3,
+    start_latitude = 10 * (-12 + Math.floor(Math.random() * 26)),
     start = Date.now();
 
   var sphere = { type: "Sphere" };
@@ -39,7 +40,7 @@
         grid = graticule();
 
       d3.timer(function () {
-        projection.rotate([speed * (Date.now() - start), -0.5 * speed * (Date.now() - start)]);
+        projection.rotate([start_latitude + speed * (Date.now() - start), -0.5 * speed * (Date.now() - start)]);
 
         context.clearRect(0, 0, width, height);
 
