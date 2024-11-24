@@ -2,7 +2,7 @@
 <script src="//d3js.org/topojson.v1.min.js"></script>
 <script>
   var width = window.innerWidth,
-    height = window.innerHeight,
+    height = Math.max(document.documentElement.clientHeight, document.documentElement.scrollHeight || 0, window.innerHeight || 0), 
     speed = 2e-3,
     start_latitude = 10 * (-12 + Math.floor(Math.random() * 26)),
     start = Date.now();
