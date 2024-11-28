@@ -3,7 +3,7 @@
   to: present
   description: I have been promoted to the senior role after delivering geospatial projects
     influencing platform logistics expansion. After the promotion, I have been tasked with
-    the desing and implementation of a spatial model supporting the logistics & deliveries department.
+    the desing and implementation of a spatial model supporting the logistics & deliveries department.<br><br>
     Technologies used: Python, Google Cloud Platform Big Query, GeoPandas, Shapely, scikit-learn,
     XGBoost/CatBoost, MapBox & ESRI API, DuckDB, Polars, PyArrow, MLFlow, Seaborn.
 
@@ -13,7 +13,7 @@
   description: I have joined the Location Intelligence team at Allegro e-commerce platform
     to help with spatial analysis for the Out-Of-Home deliveries logistics.<br>
     I have started as a software engineer / data engineer to setup geospatial data warehouse
-    from scratch and transitioned to the data science role after almost two years at the company.<br>
+    from scratch and transitioned to the data science role after almost two years at the company.<br><br>
     Technologies used: Python, Apache Airflow, Google Cloud Platform Big Query, GeoPandas, Shapely,
     MapBox & ESRI API.
 
@@ -23,7 +23,7 @@
   description: >-
     I joined the startup Yoniee, where I was involved in the design, programming
     and implementation of a recommendation system that generates rewards for users on a city map
-    based on their activity in the app.<br>
+    based on their activity in the app.<br><br>
     Technologies used: Python, FastAPI, Pydantic, GeoPandas, Celery, RabbitMQ, Redis, Postgres,
     PostGIS, TimescaleDB, Overpass, Docker, Kubernetes, Rancher, Grafana, Prometheus.
 
@@ -34,7 +34,7 @@
     the manufacturing industry. I was responsible for systems integration using Enterprise Service Buses
     and later transitioned to the full stack development of web systems supporting workers in factories.<br>
     After finishing my data science studies, I've joined the predictive maintenance project in the company
-    as a Data Scientist.<br>
+    as a Data Scientist.<br><br>
     Technologies used: Python, FastAPI, TypeScript, Angular, C#, dotNET, Microsoft Azure, PostgreSQL,
     Oracle DB, MS SQL, MongoDB, Redis, Docker, Kubernetes, Rancher, Grafana, Prometheus.
 
