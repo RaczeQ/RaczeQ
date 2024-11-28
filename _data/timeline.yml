@@ -1,7 +1,8 @@
 - title: Senior Data Scientist, <a href="https://about.allegro.eu/">Allegro</a>, PL
   from: Sep 2024
   to: present
-  description: I have been promoted to the senior role after delivering geospatial projects
+  description: >-
+    I have been promoted to the senior role after delivering geospatial projects
     influencing platform logistics expansion. After the promotion, I have been tasked with
     the desing and implementation of a spatial model supporting the logistics & deliveries department.<br><br>
     Technologies used: Python, Google Cloud Platform Big Query, GeoPandas, Shapely, scikit-learn,
@@ -10,7 +11,8 @@
 - title: Software Engineer & Data Scientist, <a href="https://about.allegro.eu/">Allegro</a>, PL
   from: May 2022
   to: Aug 2024
-  description: I have joined the Location Intelligence team at Allegro e-commerce platform
+  description: >-
+    I have joined the Location Intelligence team at Allegro e-commerce platform
     to help with spatial analysis for the Out-Of-Home deliveries logistics.<br>
     I have started as a software engineer / data engineer to setup geospatial data warehouse
     from scratch and transitioned to the data science role after almost two years at the company.<br><br>
@@ -30,7 +32,8 @@
 - title: Software Engineer & Data Scientist, DSR S.A., PL
   from: Feb 2017
   to: April 2022 
-  description: My first commercial job was at a local company DSR S.A., specializing in IT systems for
+  description: >-
+    My first commercial job was at a local company DSR S.A., specializing in IT systems for
     the manufacturing industry. I was responsible for systems integration using Enterprise Service Buses
     and later transitioned to the full stack development of web systems supporting workers in factories.<br>
     After finishing my data science studies, I've joined the predictive maintenance project in the company
