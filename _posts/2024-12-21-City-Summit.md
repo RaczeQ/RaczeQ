@@ -5,43 +5,106 @@ style: fill
 color: success
 description: Summary of building shapes exploration from the OvertureMaps dataset.
 ---
-<!-- 
-Source: [Ashley Mayer](https://medium.com/s/story/four-lessons-after-eleven-years-in-silicon-valley-d87507b7a4f6)
 
-Silicon Valley is a magical place with some strange norms—perhaps because companies, careers, and fortunes rise and fall with such astounding speed. Here are a few of the quirky, brutal, and hopefully useful lessons I learned during my 11 years living and working in the technology industry’s epicenter.
+## Back story
 
-## 1. There’s opportunity in what others undervalue
+While working on new features for the [OvertureMaestro](https://github.com/kraina-ai/overturemaestro) library, I started to explore the dataset of buildings that is provided by Overture Maps. Remembering an old project focusing on assembling multiple images of women of different ethnicities ([see here](https://theonlinephotographer.typepad.com/the_online_photographer/2013/09/averaged-faces-of-various-nationalities.html)) the question came to mind - *What would the "average" shape of a building in a given city look like?*
 
-There’s a rigid hierarchy of functions in Silicon Valley. At the top of the pyramid sit the entrepreneurs, the engineers, the venture capitalists. The closer you are to building or funding, the more respect you get—which probably makes sense. But when I began my career in tech, I wasn’t prepared for how little respect is left over for other functions: recruiting, HR, marketing, communications, etc. There’s an assumption that truly great products market themselves or that truly great companies are magnets for top talent. To work in these superfluous fields is either a sign that your company must compensate for its lack of greatness or that you’re but an intermediary for the inevitable.
+So, as is my habit, I started on a side project instead of finishing the functionality I was currently working on.
 
-Of course, not everyone thinks like this. And that’s where the upside to this warped view comes in. At the company level, it’s quite clear you’ll need to out-innovate your competitors by building a better product. But what about the less obvious vectors for competition? With the benefit of hindsight, it’s easy to see where investments in culture have paid off exceptionally well (and where the lack thereof has halted otherwise unstoppable companies). In nascent industries—especially highly regulated ones—educating customers and stakeholders about your product and market may be as core to survival as the product itself.
+The results of this project can be accessed on Streamlit: https://city-summit.streamlit.app/
 
-This opportunity for differentiation also exists at the individual level. It used to bother me that people made certain assumptions about me based on my profession. I craved validation from my peers and resented the stereotypes that came along with PR. But the longer I’ve been in this field, the more respect I have for how nuanced, impactful, and essential our work is, and consequently, I’m bothered less by other people’s projections. An unfortunate consequence of the hierarchy of functions is that it’s harder to attract top talent to the layers we undervalue, which hurts the industry as a whole. But, as an individual, it means that it’s probably more feasible to distinguish yourself as one of the top recruiters or marketers than it is to become a top engineer in a world where that is the ultimate prize.
+![alt text](https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/projects/city_summit.png "City Summit project screenshot")
 
-## 2. There’s nothing more dangerous early in your career than success
+## First tests
 
-One of our industry’s oft-repeated (and oft-abused) sayings is, “If you’re offered a seat on a rocket ship, you don’t ask what seat. You just get on.” It’s what Google’s then-CEO Eric Schmidt told Sheryl Sandberg to convince her to come onboard in 2001, and I’ve always appreciated the humility embedded in this perspective (for the seat-taker, that is). But we often fail to dwell on the inevitable follow-up question: If you took a seat on that rocket ship, and it was indeed a rocket ship, how do you know if you made any meaningful impact on its speed or trajectory?
+To begin with, I knew I had to solve two problems: how to centre all the buildings so that they were in the same space, and how to rotate them in a similar orientation so that the edges of the buildings go mainly vertical and horizontal.
 
-Success is one of the most dangerous things that can happen to you early in your career. When you’re on a so-called rocket ship, you’re likely drinking from the fire hose daily, making things up as you go along. If you’re given responsibilities that exceed your experience, you’re probably plagued by self-doubt. Then, at some point, if you’re lucky, the company you’ve helped build is declared a success. And those many bumps along the way are ironed out into a perfect narrative. Perhaps you’re even tempted to believe it.
+For the first part, I have used the [Azimuthal Equidistant](https://en.wikipedia.org/wiki/Azimuthal_equidistant_projection) projection, that maintains the distances and azimuths. Each building was projected based on their centroid.
 
-> Some reputations are built on much less than you would assume.
+{% include elements/figure.html image="https://upload.wikimedia.org/wikipedia/commons/e/ec/Azimuthal_equidistant_projection_SW.jpg" caption="Example of the Azimuthal Equidistant projection (from Wikipedia)." %}
 
-In Silicon Valley, myths about people and companies tend to beat out carefully considered case studies. Maybe it’s because so much creation happens when companies are still private and therefore less observable. Maybe it’s because there are so many new and invisible forces at work (emerging technology trends, cultural and behavioral shifts) in a company’s meteoric rise that mythology is the only way we can make sense of it. Maybe it’s because we love a good story—and a good creation story most of all.
+```python
+# Geometry projection to AEQD
+import pyproj as proj
+from shapely.ops import transform
+from shapely import Polygon
 
-It’s a balancing act to allow yourself pride in what you’ve helped accomplish without getting caught up in your own personal mythology. Be grateful for the tough times: They will keep you anchored during headier cycles. If you battle insecurity and anxiety on the regular (raises hand), find solace in the fact that you’re probably working harder than you would if you were capable of believing that it was your seat that made all the difference.
+# Example building
+g = Polygon(
+    [
+        [17.0251207, 51.0607852],
+        [17.0250685, 51.0607947],
+        [17.0250616, 51.0607808],
+        [17.025115, 51.060771],
+        [17.0251207, 51.0607852],
+    ]
+)
 
-## 3. Some reputations are built on surprisingly little
+centroid = g.centroid
+crs_wgs = proj.Proj("epsg:4326")
+aeqd_proj = proj.Proj(
+    f"+proj=aeqd +lat_0={centroid.y} +lon_0={centroid.x} +datum=WGS84 +units=m"
+)
+project = proj.Transformer.from_proj(crs_wgs, aeqd_proj, always_xy=True).transform
 
-This is going to seem random, but bear with me: In the 1999 rom-com Never Been Kissed, Drew Barrymore’s character, Josie, is a reporter who goes undercover as a high school student to write about the “cool” high school crowd. But there’s just one problem: She’s super uncool, so she can’t get anywhere near them. Then her naturally cool younger brother decides to relive his high school glory days and salvages her assignment by convincing the cool kids that Josie is, in fact, quite cool. “All you need is for one person to think you’re cool,” he tells her. “And you’re in.”
+geom_proj = transform(project, g)
 
-Silicon Valley can feel a little like high school—in many ways, but especially when it comes to people’s reputations. I’m regularly shocked by how much just one person declaring someone a “rockstar” can open doors and even change the trajectory of a career. And if the person doing the declaring is particularly influential, other people will repeat their pronouncement as a given. The speed and opacity of startup trajectories make it impossible to really know how impactful someone was (how to separate the seat from the rocket ship), so personal endorsements carry a tremendous amount of weight. Which means that some reputations are built on much less than you would assume.
+geom_proj # notice that values are close to zero - above and below, these are in meters
+# POLYGON ((2.0498206612070975 0.2566105251930882, -1.6097078406850456 1.3134800558941384, -2.093439190884303 -0.2328869958116028, 1.6502174436552757 -1.3231316731725968, 2.0498206612070975 0.2566105251930882))
+```
 
-This is troubling, especially because influential people tend to skew white and male, as do their networks, which only reinforces existing power structures. But it’s also an incredible opportunity to elevate deserving but underappreciated and underrepresented people—especially if you yourself are influential. I doubt many people know how much weight their words carry.
+The second part was trickier. How can I determine when the building is "straight" or "right"?
 
-Of course, if you’re not accustomed to wielding this power—or asking for it to be wielded on your behalf—it can feel pretty uncomfortable. Women in particular have a harder time transitioning from the personal and emotional to the transactional in their relationships. My female friends and I have discussed this extensively and have even experimented with a “favor swap” event where the whole point is to get transactional. Maybe this is what Lean In Circles should have been all along—lead with the favors, not the feelings.
+My first idea was to rotate the building for each angle individually from 0 to 89 and for each angle calculate the azimuths of edges, weighted by their length and create some kind of score to determine the best rotation angle.
 
-## 4. Your former co-workers are your rocks, so keep them close
+After thinking things through, and after reviewing the Shapely library documentation, I found a simpler solution.
 
-This one is simple, but important. We all know how critical it is to build strong relationships inside a company, but it wasn’t until I moved on from my first startup job that I realized how incredibly valuable co-worker relationships become after you leave. After years together in the trenches, former co-workers know your strengths and can call you on your bullshit. And once you’re no longer co-workers, all those pesky work-related complications and politics disappear.
+Using the minimum_rotated_rectangle function, I can get a minimum rectangle surrounding a given building, a de facto rotated bounding box. What if I just rotate this bounding box so that it coincides with the real bounding box? The idea was that this configuration should keep the footprint of a building the smallest and most edges should be in horizontal and vertical orientations.
 
-Your non-co-worker friends will of course cheer you on, but if you’re in a rut professionally or trying to figure out if you’re the one being difficult in a dysfunctional work relationship, no one can help you troubleshoot like your former colleagues. Same if you need a substantive ego boost. And because your relationship started in a work context, it’s also much easier to be transactional, whether that means asking for intros, references, funding, or feedback. -->
+{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/rotated_building.png" caption="The difference between original and rotated building with bounding box and a minimum rotated rectangle." %}
+
+To get the right angle, I iterated all the points of the resulting rectangle in turn, counted the azimuth between two points and rotated the shape by the negative value obtained. But in this way I will obtain 4 angles, which will be two pairs in the horizontal and vertical axis. How do I choose one angle from these 4? I decided that I wanted the rotated building to be longer than taller (width >= height), and for the centroid to be in the middle, or to be above half the height of the rectangle.
+
+```python
+# Rotation logic
+coords = list(geometry.minimum_rotated_rectangle.exterior.coords)
+
+for i in range(len(coords) - 1):
+    p1 = coords[i]
+    p2 = coords[i + 1]
+    angle = math.degrees(
+        math.atan2(p2[1] - p1[1], p2[0] - p1[0])
+    )  # https://stackoverflow.com/questions/42258637/how-to-know-the-angle-between-two-points
+    rotated_geometry = affinity.rotate(geometry, angle=-angle, origin="centroid")
+
+    minx, miny, maxx, maxy = rotated_geometry.bounds
+    width = maxx - minx
+    height = maxy - miny
+
+    # Building is higher than it is wider
+    if round(height, 2) > round(width, 2):
+        continue
+
+    # The centroid is in the lower half of the rectangle
+    if abs(round(maxy, 2)) > abs(round(miny, 2)):
+        continue
+
+    return rotated_geometry
+
+raise RuntimeError("Rotation not found")
+```
+
+---
+
+This blog post is Work In Progress.
+
+TODO:
+
+- first visualizations
+- iterations on visualizations
+- stacking buildings in rasterio
+- switching to Plotly 3D - interactive
+- refactor to utm crs - faster
+- streamlit deploy
+- where posted on social media
