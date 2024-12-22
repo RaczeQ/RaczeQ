@@ -105,13 +105,21 @@ Now that I think about it, it would be possible to choose the right angle of rot
 
 To start, I used the `plot()` function from the GeoPandas library displaying only the edges and slightly colouring the shape of the building. I divided the set of buildings into small and large based on the total area.
 
+{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/all_buildings_edges_only.png" caption="All building shapes outlines visualized." %}
 
-{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/small_buildings.png" caption="Small buildings visualization" %}
+To make these less cluttered, I divided the set of buildings into small and large based on the total area. I also added a slight background colouring for the buildings. 
 
-{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/big_buildings.png" caption="Bigger buildings visualization" %}
+{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/small_buildings.png" caption="Small buildings visualization." %}
 
+{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/big_buildings.png" caption="Bigger buildings visualization." %}
+
+I have also experimented with leaving only vertices, without edges.
+
+{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/big_buildings_dots.png" caption="Bigger buildings vertices only visualization." %}
 
 ## Switch to the heightmap
+
+For me, those previous results weren't satisfactory, so I started experimenting with the `rasterio` library and the `rasterize` functionality for switching vector data into raster data.
 
 ## Streamlit implementation
 
