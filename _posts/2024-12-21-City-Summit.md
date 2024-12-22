@@ -20,6 +20,8 @@ The results of this project can be accessed on Streamlit: [https://city-summit.s
 
 To begin with, I knew I had to solve two problems: how to centre all the buildings so that they were in the same space, and how to rotate them in a similar orientation so that the edges of the buildings go mainly vertical and horizontal.
 
+### Translating building vertices
+
 For the first part, I have used the [Azimuthal Equidistant](https://en.wikipedia.org/wiki/Azimuthal_equidistant_projection) projection, that maintains the distances and azimuths. Each building was projected based on their centroid.
 
 {% include elements/figure.html image="https://upload.wikimedia.org/wikipedia/commons/e/ec/Azimuthal_equidistant_projection_SW.jpg" caption="Example of the Azimuthal Equidistant projection (from Wikipedia)." %}
@@ -54,13 +56,15 @@ geom_proj # notice that values are close to zero - above and below, these are in
 # POLYGON ((2.0498206612070975 0.2566105251930882, -1.6097078406850456 1.3134800558941384, -2.093439190884303 -0.2328869958116028, 1.6502174436552757 -1.3231316731725968, 2.0498206612070975 0.2566105251930882))
 ```
 
+### Finding the best building rotation angle
+
 The second part was trickier. How can I determine when the building is "straight" or "right"?
 
 My first idea was to rotate the building for each angle individually from 0 to 89 and for each angle calculate the azimuths of edges, weighted by their length and create some kind of score to determine the best rotation angle.
 
 After thinking things through, and after reviewing the Shapely library documentation, I found a simpler solution.
 
-Using the minimum_rotated_rectangle function, I can get a minimum rectangle surrounding a given building, a de facto rotated bounding box. What if I just rotate this bounding box so that it coincides with the real bounding box? The idea was that this configuration should keep the footprint of a building the smallest and most edges should be in horizontal and vertical orientations.
+Using the `minimum_rotated_rectangle` function, I can get a minimum rectangle surrounding a given building, a de facto rotated bounding box. What if I just rotate this bounding box so that it coincides with the real bounding box? The idea was that this configuration should keep the footprint of a building the smallest and most edges should be in horizontal and vertical orientations.
 
 {% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/rotated_building.png" caption="The difference between original and rotated building with bounding box and a minimum rotated rectangle." %}
 
@@ -94,6 +98,24 @@ for i in range(len(coords) - 1):
 
 raise RuntimeError("Rotation not found")
 ```
+
+Now that I think about it, it would be possible to choose the right angle of rotation without rotating the building, based on the length and angle between the diagonals, but I would rather stay with the current implementation.
+
+## Basic visualizations
+
+To start, I used the `plot()` function from the GeoPandas library displaying only the edges and slightly colouring the shape of the building. I divided the set of buildings into small and large based on the total area.
+
+{% capture carousel_images %}
+https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/small_buildings.png
+https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/big_buildings.png
+{% endcapture %}
+{% include elements/carousel.html %}
+
+## Switch to the heightmap
+
+## Streamlit implementation
+
+## Summary
 
 ---
 
