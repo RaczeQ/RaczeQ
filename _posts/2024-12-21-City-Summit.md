@@ -64,7 +64,7 @@ My first idea was to rotate the building for each angle individually from 0 to 8
 
 After thinking things through, and after reviewing the Shapely library documentation, I found a simpler solution.
 
-Using the `minimum_rotated_rectangle` function, I can get a minimum rectangle surrounding a given building, a de facto rotated bounding box. What if I just rotate this bounding box so that it coincides with the real bounding box? The idea was that this configuration should keep the footprint of a building the smallest and most edges should be in horizontal and vertical orientations.
+Using the `minimum_rotated_rectangle` function, I can get a minimum rectangle surrounding a given building, a de facto rotated bounding box. What if I just rotate this rectangle so that it is equal to the real bounding box? The idea was that this configuration should keep the footprint of a building the smallest and most edges should be in horizontal and vertical orientations.
 
 {% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/rotated_building.png" caption="The difference between original and rotated building with bounding box and a minimum rotated rectangle." %}
 
