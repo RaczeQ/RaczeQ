@@ -6,6 +6,8 @@ color: success
 description: Summary of building shapes exploration from the OvertureMaps dataset.
 ---
 
+{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/20_cities_grid.png" caption="Final visualisation for 20 different cities around the world." %}
+
 ## Back story
 
 While working on new features for the [OvertureMaestro](https://github.com/kraina-ai/overturemaestro) library, I started to explore the dataset of buildings that is provided by Overture Maps. Remembering an old project focusing on assembling multiple images of women of different ethnicities ([see here](https://theonlinephotographer.typepad.com/the_online_photographer/2013/09/averaged-faces-of-various-nationalities.html)) the question came to mind - *What would the "average" shape of a building in a given city look like?*
