@@ -103,7 +103,7 @@ Now that I think about it, it would be possible to choose the right angle of rot
 
 ## Basic visualizations
 
-To start, I used the `plot()` function from the GeoPandas library displaying only the edges and slightly colouring the shape of the building. I divided the set of buildings into small and large based on the total area.
+To start, I used the `plot()` function from the GeoPandas library displaying only the edges of the buildings.
 
 {% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/all_buildings_edges_only.png" caption="All building shapes outlines visualized." %}
 
