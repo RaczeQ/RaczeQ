@@ -12,7 +12,7 @@ While working on new features for the [OvertureMaestro](https://github.com/krain
 
 So, as is my habit, I started on a side project instead of finishing the functionality I was currently working on.
 
-The results of this project can be accessed on Streamlit: https://city-summit.streamlit.app/
+The results of this project can be accessed on Streamlit: [https://city-summit.streamlit.app/](https://city-summit.streamlit.app/)
 
 ![alt text](https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/projects/city_summit.png "City Summit project screenshot")
 
