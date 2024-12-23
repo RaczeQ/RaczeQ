@@ -187,7 +187,7 @@ axes[0].set_title("Linear colour scale")
 axes[1].set_title("Log colour scale")
 ```
 
-{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/big_buildings_dots.png" caption="Generated heightmap in linear and logarithmic colour scales." %}
+{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/heightmap_plt_2d_plot.png" caption="Generated heightmap in linear and logarithmic colour scales." %}
 
 ## Streamlit implementation
 
