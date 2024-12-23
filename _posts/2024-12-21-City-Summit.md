@@ -87,6 +87,9 @@ Using the `minimum_rotated_rectangle` function, I can get a minimum rectangle su
 To get the right angle, I iterated all the points of the resulting rectangle in turn, counted the azimuth between two points and rotated the shape by the negative value obtained. But in this way I will obtain 4 angles, which will be two pairs in the horizontal and vertical axis. How do I choose one angle from these 4? I decided that I wanted the rotated building to be longer than taller (width >= height), and for the centroid to be in the middle, or to be above half the height of the rectangle.
 
 ```python
+import math
+from shapely import affinity
+
 # Rotation logic
 coords = list(geometry.minimum_rotated_rectangle.exterior.coords)
 
