@@ -18,6 +18,20 @@ The results of this project can be accessed on Streamlit: [https://city-summit.s
 
 ![alt text](https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/projects/city_summit.png "City Summit project screenshot")
 
+## Getting the data
+
+Downloading the Overture Maps data for the buildings is quite easy. I have used the `OvertureMaestro` library, but you can also access it with official `overturemaps-py` library as well as using DuckDB SQL query.
+
+```python
+from overturemaestro import convert_geometry_to_geodataframe, geocode_to_geometry
+
+buildings = convert_geometry_to_geodataframe(
+    "buildings", "building", geometry_filter=geocode_to_geometry("Paris")
+)
+```
+
+This code will download the data locally as a GeoParquet and return a GeoDataFrame for the user. You can also get the path to the file instead using `convert_geometry_to_parquet` function.
+
 ## First tests
 
 To begin with, I knew I had to solve two problems: how to centre all the buildings so that they were in the same space, and how to rotate them in a similar orientation so that the edges of the buildings go mainly vertical and horizontal.
@@ -122,6 +136,58 @@ I have also experimented with leaving only vertices, without edges.
 ## Switch to the heightmap
 
 For me, those previous results weren't satisfactory, so I started experimenting with the `rasterio` library and the `rasterize` functionality for switching vector data into raster data.
+
+```python
+import numpy as np
+from affine import Affine
+from rasterio.features import MergeAlg, rasterize
+
+# 1 px will equal to 1 meter,
+# higher values will increase number of pixels per meter
+resolution = 1
+
+minx, miny, maxx, maxy = geoseries.total_bounds
+
+canvas_width = int(np.ceil(maxx - minx)) * resolution
+canvas_height = int(np.ceil(maxy - miny)) * resolution
+
+canvas = rasterize(
+    shapes=geoseries,
+    fill=0,
+    # Add padding of 2 pixels on each side
+    out_shape=(canvas_height + 4, canvas_width + 4),
+    # Add values together from many shapes
+    merge_alg=MergeAlg.add,
+    transform=(
+        # Add 2 pixels to move away from edge
+        Affine.translation(xoff=minx - 2, yoff=miny - 2)
+        # Scale buildings to fit bigger canvas
+        * Affine.scale(1 / resolution)
+    ),
+)
+
+canvas = np.flipud(canvas) # flip canvas vertically
+```
+
+```python
+import matplotlib.pyplot as plt
+
+fig, axes = plt.subplots(1, 2, figsize=(20, 10), dpi=300)
+
+# Linear scale plot
+axes[0].imshow(heightmap)
+axes[0].set_axis_off()
+
+# Logarithmic scale plot
+axes[1].imshow(heightmap, norm=LogNorm(vmin=1, vmax=heightmap.max()))
+axes[1].set_axis_off()
+
+
+axes[0].set_title("Linear colour scale")
+axes[1].set_title("Log colour scale")
+```
+
+{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/big_buildings_dots.png" caption="Generated heightmap in linear and logarithmic colour scales." %}
 
 ## Streamlit implementation
 
