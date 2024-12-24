@@ -230,18 +230,54 @@ plotly_map = list(
         interpolated_colours[:, :3]
     )
 )
-plotly_map
 ```
 
 {% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/pypalletes_docs.png" caption="Screenshot from the <a href='https://python-graph-gallery.com/color-palette-finder/' target='_blank'>Python Color Palette Finder</a> website." %}
 
 #### Polishing the visualization
 
-- log scale
-- axes removed
-- code
-- image
-- show plot without rotation
+To make the plot prettier I've done these additional steps:
+
+- Applied logarithm on the heightmap
+- Removed the axes
+- Applied the new palette
+
+```python
+# Calculate the ratio to keep proper aspect
+y_ratio = heightmap.shape[0] / heightmap.shape[1]
+
+# Applying logarithm on 0 will return -inf
+# Replace these values with -1
+with np.errstate(divide="ignore"):
+    z = np.log(heightmap)
+    z[np.isneginf(z)] = -1
+
+# Camera position
+x_eye, y_eye, z_eye = 0.8, 0.8, 1.5 
+
+fig = go.Figure(data=[go.Surface(z=z, colorscale=plotly_map)])
+fig.update_traces(
+    showscale=False,
+    contours_z=dict(show=True, usecolormap=True, project_z=False),
+)
+fig.update_scenes(aspectratio=dict(x=1, z=1, y=y_ratio))
+fig.update_layout(
+    title=dict(text=f"<br>Paris", font=dict(size=20)),
+    autosize=True,
+    scene_camera_eye=dict(x=x_eye, y=y_eye, z=z_eye),
+    margin=dict(l=5, r=5, b=5, t=5),
+    scene=dict(
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        # Clip the values to be above the slightly above -1
+        zaxis=dict(visible=False, range=[-0.99, None]),
+    ),
+)
+```
+
+{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/plotly_surface_log_scale.png" caption="Final visualisation." %}
+
+{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/plotly_surface_not_rotated.png" caption="Summit with buildings left in their original orientation." %}
 
 ## Streamlit implementation
 
@@ -261,12 +297,6 @@ This blog post is Work In Progress.
 
 TODO:
 
-- rotation or not - difference
-
-- first visualizations
-- iterations on visualizations
-- stacking buildings in rasterio
-- switching to Plotly 3D - interactive
 - refactor to utm crs - faster
 - streamlit deploy
 - where posted on social media
