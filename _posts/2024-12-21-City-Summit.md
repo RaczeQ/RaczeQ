@@ -243,6 +243,10 @@ To make the plot prettier I've done these additional steps:
 - Applied the new palette
 
 ```python
+import numpy as np
+import plotly.graph_objects as go
+
+
 # Calculate the ratio to keep proper aspect
 y_ratio = heightmap.shape[0] / heightmap.shape[1]
 
