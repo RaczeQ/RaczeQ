@@ -16,6 +16,8 @@ So, as is my habit, I started on a side project instead of finishing the functio
 
 The results of this project can be accessed on Streamlit: [https://city-summit.streamlit.app/](https://city-summit.streamlit.app/)
 
+- run code manually here ... (notebook)
+
 ![alt text](https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/projects/city_summit.png "City Summit project screenshot")
 
 ## Getting the data
@@ -235,9 +237,23 @@ plotly_map
 
 #### Polishing the visualization
 
+- log scale
+- axes removed
+- code
+- image
+- show plot without rotation
+
 ## Streamlit implementation
 
+- first time
+- low memory / cpu
+- switch to utm from aeqd - good enough
+- codebase
+
 ## Summary
+
+- what i learned
+- where posted
 
 ---
 
