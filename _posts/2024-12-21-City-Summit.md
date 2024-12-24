@@ -36,7 +36,7 @@ This code will download the data locally as a GeoParquet and return a GeoDataFra
 
 To begin with, I knew I had to solve two problems: how to centre all the buildings so that they were in the same space, and how to rotate them in a similar orientation so that the edges of the buildings go mainly vertical and horizontal.
 
-##### Translating building vertices
+#### Translating building vertices
 
 For the first part, I have used the [Azimuthal Equidistant](https://en.wikipedia.org/wiki/Azimuthal_equidistant_projection) projection, that maintains the distances and azimuths. Each building was projected based on their centroid.
 
@@ -72,7 +72,7 @@ geom_proj # notice that values are close to zero - above and below, these are in
 # POLYGON ((2.0498206612070975 0.2566105251930882, -1.6097078406850456 1.3134800558941384, -2.093439190884303 -0.2328869958116028, 1.6502174436552757 -1.3231316731725968, 2.0498206612070975 0.2566105251930882))
 ```
 
-##### Finding the best building rotation angle
+#### Finding the best building rotation angle
 
 The second part was trickier. How can I determine when the building is "straight" or "right"?
 
@@ -169,28 +169,71 @@ canvas = rasterize(
     ),
 )
 
-canvas = np.flipud(canvas) # flip canvas vertically
+heightmap = np.flipud(canvas) # flip canvas vertically
 ```
+
+#### Plotting the heightmap
 
 ```python
 import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.colors import LogNorm
 
 fig, axes = plt.subplots(1, 2, figsize=(20, 10), dpi=300)
 
-# Linear scale plot
-axes[0].imshow(heightmap)
+heightmap_masked = np.ma.masked_where(heightmap == 0, heightmap)
+
+axes[0].imshow(heightmap_masked)
 axes[0].set_axis_off()
-
-# Logarithmic scale plot
-axes[1].imshow(heightmap, norm=LogNorm(vmin=1, vmax=heightmap.max()))
-axes[1].set_axis_off()
-
-
 axes[0].set_title("Linear colour scale")
+
+axes[1].imshow(heightmap_masked, norm=LogNorm())
+axes[1].set_axis_off()
 axes[1].set_title("Log colour scale")
+
+plt.show()
 ```
 
 {% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/heightmap_plt_2d_plot.png" caption="Generated heightmap in linear and logarithmic colour scales." %}
+
+As you can see, the centre of the heightmap is dominated by extremely high values. This makes sense; after all, most buildings in cities have a fairly small footprint. To discover more detail, it is useful to display the values on a logarithmic scale.
+
+#### 3D visualization
+
+Having a heightmap, I began to wonder what it would look like in 3D. Using the Surface plot function from the Plotly library, I was able to generate an interactive visualisation for the calculated data.
+
+{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/plotly_surface_linear_scale.png" caption="Basic 3D surface plot." %}
+
+#### Loading the palette
+
+The next step to improve the look was the ability to change the colour palette. For this I used the PyPalettes library with which you can easily access thousands of palettes from various sources.
+
+```python
+from pypalettes import load_cmap
+import numpy as np
+
+loaded_cm = load_cmap("ag_Sunset", cmap_type="continuous")
+# resample to 256 values
+interpolated_colours = loaded_cm(np.linspace(0, 1, 256))
+
+# replace first colour with white or black
+white = np.array([1, 1, 1, 1])
+interpolated_colours[:1, :] = white
+
+# transform the palette to a plotly-compatible format:
+# a list of rgb(a) css values
+plotly_map = list(
+    map(
+        lambda c: f"rgb({int(c[0] * 255)}, {int(c[1] * 255)}, {int(c[2] * 255)})",
+        interpolated_colours[:, :3]
+    )
+)
+plotly_map
+```
+
+{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/pypalletes_docs.png" caption="Screenshot from the [Python Color Palette Finder](https://python-graph-gallery.com/color-palette-finder/) website." %}
+
+#### Polishing the visualization
 
 ## Streamlit implementation
 
@@ -201,6 +244,8 @@ axes[1].set_title("Log colour scale")
 This blog post is Work In Progress.
 
 TODO:
+
+- rotation or not - difference
 
 - first visualizations
 - iterations on visualizations
