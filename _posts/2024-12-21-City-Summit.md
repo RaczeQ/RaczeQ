@@ -231,7 +231,7 @@ plotly_map = list(
 plotly_map
 ```
 
-{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/pypalletes_docs.png" caption="Screenshot from the <a href="https://python-graph-gallery.com/color-palette-finder/" target="_blank">Python Color Palette Finder</a> website." %}
+{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/pypalletes_docs.png" caption="Screenshot from the <a href='https://python-graph-gallery.com/color-palette-finder/' target='_blank'>Python Color Palette Finder</a> website." %}
 
 #### Polishing the visualization
 
