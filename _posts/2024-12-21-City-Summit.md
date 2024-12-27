@@ -310,7 +310,7 @@ I had to completely remove multiprocessing from the app to avoid code throttling
 
 To speed up the calculations, I opted to replace geometry projection from Azimuthal Equidistant to Universal Transverse Mercator (UTM) Coordinate Reference System (CRS), because it can be applied on the whole dataset of buildings at once and the difference in precision isn't that important for this project.
 
-- TODO: batch processing
+Additionally, to lower the memory usage, I've implemented batch processing for downloaded buildings data. `OvertureMaestro` is downloading Overture Maps data into a GeoParquet file. Instead of loading it all to a `GeoDataFrame` with `read_parquet` function, I'm iterating over Arrow batches with `PyArrow` library and keep the memory usage low.
 
 {% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/streamlit_result.png" caption="City Summit result for the city of London." %}
 
@@ -322,7 +322,13 @@ The code is publicly available on the [City Summit 🏙️🗻 GitHub repository
 
 #### What I learned
 
-- TODO
+The main thing I learned during this project was how to write apps with Streamlit.
+
+The data wrangling part (getting all the building shapes into a common space and finding the proper rotation) was a nice mind-puzzle to figure out, but wasn't as hard to achieve with currently available tools in Python.
+
+For the visualization part, I initially tried to use Matplotlib 3D surface plot functions, but the results weren't satisfactory, so I switched to Plotly.
+
+Overall, I am satisfied with the visualisations generated, and with the interactive application I deployed on Streamlit.
 
 #### Used libraries
 
@@ -332,6 +338,7 @@ The code is publicly available on the [City Summit 🏙️🗻 GitHub repository
 - [Rasterio](https://github.com/rasterio/rasterio) - for rastering the buildings dataset into a heightmap.
 - [Plotly](https://github.com/plotly/plotly.py) - for displaying 3D surface plot using heightmap data.
 - [NumPy](https://github.com/numpy/numpy) - for 2D array (heightmap) manipulation.
+- [PyArrow](https://github.com/apache/arrow) - for parquet file batch processing.
 - [PyPalettes](https://github.com/JosephBARBIERDARNAL/pypalettes) - for easy access to many palletes.
 - [Matplotlib](https://github.com/matplotlib/matplotlib) - for transforming palettes.
 - [streamlit-folium](https://github.com/randyzwitch/streamlit-folium) - a third party Streamlit component for displaying a Folium map, used for preview geocoded geometry to the user.
