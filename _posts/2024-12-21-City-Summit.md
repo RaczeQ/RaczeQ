@@ -316,6 +316,8 @@ Additionally, to lower the memory usage, I've implemented batch processing for d
 
 Overall I was happy with how fast I was able to push out a finalized app to the public. Automatic theme adjustment for the Plotly chart with `st.plotly_chart` was also really handy. All required calculations are saved on disk, so consequent runs do not have to redo all the steps (until the app is stopped because of no activity).
 
+I've also included the option to download the generated heightmap as a numpy array if anyone wants to experiment with it.
+
 The code is publicly available on the [City Summit 🏙️🗻 GitHub repository](https://github.com/raczeq/city-summit).
 
 ## Summary
@@ -328,7 +330,9 @@ The data wrangling part (getting all the building shapes into a common space and
 
 For the visualization part, I initially tried to use Matplotlib 3D surface plot functions, but the results weren't satisfactory, so I switched to Plotly.
 
-Overall, I am satisfied with the visualisations generated, and with the interactive application I deployed on Streamlit.
+As an additional feature, I was thinking about transforming the generated heightmap into an STL file for 3D printing purposes if anyone wishes to do that. I've checked some sources on how to transform heightmaps into 3D objects, but decided not to pursue this path for now.
+
+In the end, I am satisfied with the visualisations generated, and with the interactive application I deployed on Streamlit.
 
 #### Used libraries
 
