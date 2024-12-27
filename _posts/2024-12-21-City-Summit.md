@@ -295,13 +295,13 @@ I have never deployed any Python app on the internet, but I heard about Streamli
 
 I was pleasantly surprised by how easy it is to create a Streamlit application deployed in the Community Cloud. You log int with your GitHub account, select a template (I went with the Blank one), choose a name / domain and everything is created for you. Then you can start with coding using GitHub Codespaces right away. It was also my first time using the Codespaces and I must admit that it is a very convenient process (though I am an avid VS Code user).
 
-{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/projects/streamlit_creator.png" caption="Streamlit project creator form." %}
+{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/streamlit_creator.png" caption="Streamlit project creator form." %}
 
 #### Coding experience
 
 Streamlit documentation is really well maintained with interactive examples. I was able to quickly draft a conditional form for the user with state caching and values validation (mainly Nominatim geocoding errors or limiting the max area of interest).
 
-{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/projects/streamlit_form.png" caption="City Summit parameters form with values validation." %}
+{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/streamlit_form.png" caption="City Summit parameters form with values validation." %}
 
 Porting the code from my notebook required some changes, mainly to the tracking functions that displayed progress - I was using a `track` function from `rich.progress`, but had to wrap it with manual `st.progress` calls in every loop iteration.
 
@@ -312,7 +312,7 @@ To speed up the calculations, I opted to replace geometry projection from Azimut
 
 - TODO: batch processing
 
-{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/projects/streamlit_result.png" caption="City Summit result for the city of London." %}
+{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/streamlit_result.png" caption="City Summit result for the city of London." %}
 
 Overall I was happy with how fast I was able to push out a finalized app to the public. Automatic theme adjustment for the Plotly chart with `st.plotly_chart` was also really handy. All required calculations are saved on disk, so consequent runs do not have to redo all the steps (until the app is stopped because of no activity).
 
