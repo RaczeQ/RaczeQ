@@ -310,7 +310,7 @@ I had to completely remove multiprocessing from the app to avoid code throttling
 
 To speed up the calculations, I opted to replace geometry projection from Azimuthal Equidistant to Universal Transverse Mercator (UTM) Coordinate Reference System (CRS), because it can be applied on the whole dataset of buildings at once and the difference in precision isn't that important for this project.
 
-Additionally, to lower the memory usage, I've implemented batch processing for downloaded buildings data. `OvertureMaestro` is downloading Overture Maps data into a GeoParquet file. Instead of loading it all to a `GeoDataFrame` with `read_parquet` function, I'm iterating over Arrow batches with `PyArrow` library and keep the memory usage low.
+Additionally, to lower the memory usage, I've implemented batch processing for downloaded buildings data. `OvertureMaestro` is downloading Overture Maps data into a GeoParquet file. Instead of loading it all to a `GeoDataFrame` with `read_parquet` function, I'm iterating over Arrow batches with `PyArrow` library to keep the memory usage low.
 
 {% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/streamlit_result.png" caption="City Summit result for the city of London." %}
 
