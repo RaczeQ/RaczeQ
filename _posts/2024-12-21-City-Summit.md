@@ -16,9 +16,9 @@ So, as is my habit, I started on a side project instead of finishing the functio
 
 The results of this project can be accessed on Streamlit: [https://city-summit.streamlit.app/](https://city-summit.streamlit.app/)
 
-- run code manually here ... (notebook)
+You can also run the code locally using [this Jupyter notebook](https://github.com/RaczeQ/city-summit/blob/main/code.ipynb).
 
-![alt text](https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/projects/city_summit.png "City Summit project screenshot")
+{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/projects/city_summit.png" caption="City Summit project screenshot" %}
 
 ## Getting the data
 
@@ -281,18 +281,61 @@ fig.update_layout(
 
 {% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/plotly_surface_log_scale.png" caption="Final visualisation." %}
 
+Just for comparison, I have also created a visualization for buildings without rotating them.
+
 {% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/plotly_surface_not_rotated.png" caption="Summit with buildings left in their original orientation." %}
 
 ## Streamlit implementation
 
-- first time
-- low memory / cpu
-- switch to utm from aeqd - good enough
-- codebase
+I wanted to share this project on the internet, but just showing the visualizations or animations wouldn't cut it for me. In my open-source endevours I'm strongly advocating for exploring the areas you personally know, so I wanted to enbale everyone to easily select their home city and create the summit on the spot without any hassle.
+
+I have never deployed any Python app on the internet, but I heard about Streamlit and Gradio. After quick search on the internet, I decided to give Streamlit a shot.
+
+#### Creating the app
+
+I was pleasantly surprised by how easy it is to create a Streamlit application deployed in the Community Cloud. You log int with your GitHub account, select a template (I went with the Blank one), choose a name / domain and everything is created for you. Then you can start with coding using GitHub Codespaces right away. It was also my first time using the Codespaces and I must admit that it is a very convenient process (though I am an avid VS Code user).
+
+{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/projects/streamlit_creator.png" caption="Streamlit project creator form." %}
+
+#### Coding experience
+
+Streamlit documentation is really well maintained with interactive examples. I was able to quickly draft a conditional form for the user with state caching and values validation (mainly Nominatim geocoding errors or limiting the max area of interest).
+
+{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/projects/streamlit_form.png" caption="City Summit parameters form with values validation." %}
+
+Porting the code from my notebook required some changes, mainly to the tracking functions that displayed progress - I was using a `track` function from `rich.progress`, but had to wrap it with manual `st.progress` calls in every loop iteration.
+
+One of the limiting factors was resources. It's not oficially mentioned in the documentation (or I didn't find it), but I have found an answer on Streamlit Discuss forum that a Community Cloud app has up to 2 CPUs, 1 GB of memory and 50 GB of storage.
+I had to completely remove multiprocessing from the app to avoid code throttling, because Streamlit displays errors if resources usage is maxed out. I even had to make a quick patch to the `OvertureMaestro` library to allow passing a max number of multiprocessing workers.
+
+To speed up the calculations, I opted to replace geometry projection from Azimuthal Equidistant to Universal Transverse Mercator (UTM) Coordinate Reference System (CRS), because it can be applied on the whole dataset of buildings at once and the difference in precision isn't that important for this project.
+
+- TODO: batch processing
+
+{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/projects/streamlit_result.png" caption="City Summit result for the city of London." %}
+
+Overall I was happy with how fast I was able to push out a finalized app to the public. Automatic theme adjustment for the Plotly chart with `st.plotly_chart` was also really handy. All required calculations are saved on disk, so consequent runs do not have to redo all the steps (until the app is stopped because of no activity).
+
+The code is publicly available on the [City Summit 🏙️🗻 GitHub repository](https://github.com/raczeq/city-summit).
 
 ## Summary
 
-- what i learned
+#### What I learned
+
+- TODO
+
+#### Used libraries
+
+- [OvertureMaestro](https://github.com/kraina-ai/overturemaestro) - for downloading Overture Maps data for a given city and for geocoding the string to a geometry.
+- [GeoPandas](https://github.com/geopandas/geopandas) - for geospatial operations on a dataset of downloaded buildings and I/O.
+- [Shapely](https://github.com/shapely/shapely) - for rotations and translations of a building geometry.
+- [Rasterio](https://github.com/rasterio/rasterio) - for rastering the buildings dataset into a heightmap.
+- [Plotly](https://github.com/plotly/plotly.py) - for displaying 3D surface plot using heightmap data.
+- [NumPy](https://github.com/numpy/numpy) - for 2D array (heightmap) manipulation.
+- [PyPalettes](https://github.com/JosephBARBIERDARNAL/pypalettes) - for easy access to many palletes.
+- [Matplotlib](https://github.com/matplotlib/matplotlib) - for transforming palettes.
+- [streamlit-folium](https://github.com/randyzwitch/streamlit-folium) - a third party Streamlit component for displaying a Folium map, used for preview geocoded geometry to the user.
+- [Lonboard](https://github.com/developmentseed/lonboard) - for displaying geocoded geometry in the Jupyter Notebook.
 
 #### Social media mentions
 
@@ -312,12 +355,3 @@ Bluesky:
 - [First results](https://bsky.app/profile/raczeq.bsky.social/post/3ld2of3xrnc2v)
 - [Rotating animation](https://bsky.app/profile/raczeq.bsky.social/post/3ldfwqdrdlk2h)
 - [Streamlit deploy mention](https://bsky.app/profile/raczeq.bsky.social/post/3ldrnj4uk6k2p)
-
----
-
-This blog post is Work In Progress.
-
-TODO:
-
-- refactor to utm crs - faster
-- streamlit deploy
