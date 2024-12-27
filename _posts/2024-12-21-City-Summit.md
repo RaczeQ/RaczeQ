@@ -293,24 +293,25 @@ fig.update_layout(
 ## Summary
 
 - what i learned
-- where posted
 
 #### Social media mentions
 
+Streamlit:
+
+- [Deployed app](https://city-summit.streamlit.app/)
+- [Show the Community! discuss post](https://discuss.streamlit.io/t/city-summit-generate-building-data-visualization-for-your-city/88248)
+
 LinkedIn:
-- https://www.linkedin.com/posts/raczyckikamil_geospatial-geo-overturemaps-activity-7273033425983328256-0U5x?utm_source=share&utm_medium=member_android
-- https://www.linkedin.com/posts/raczyckikamil_opensource-geo-geospatial-activity-7273508171153887232-EtOb?utm_source=share&utm_medium=member_android
-- https://www.linkedin.com/posts/raczyckikamil_geo-geospatial-urban-activity-7273853844806074368-rfth?utm_source=share&utm_medium=member_android
-- https://www.linkedin.com/posts/raczyckikamil_overturemaps-geo-geospatial-activity-7275679432143446016-0d57?utm_source=share&utm_medium=member_android
-- https://www.linkedin.com/posts/raczyckikamil_city-summit-generator-activity-7276026160747020288-HmeL?utm_source=share&utm_medium=member_android
+- [First results](https://www.linkedin.com/posts/raczyckikamil_geospatial-geo-overturemaps-activity-7273033425983328256-0U5x?utm_source=share&utm_medium=member_android)
+- [First 3D matplotlib visualization](https://www.linkedin.com/posts/raczyckikamil_opensource-geo-geospatial-activity-7273508171153887232-EtOb?utm_source=share&utm_medium=member_android)
+- [Rotating 3D Plotly animation](https://www.linkedin.com/posts/raczyckikamil_geo-geospatial-urban-activity-7273853844806074368-rfth?utm_source=share&utm_medium=member_android)
+- [Streamlit deploy mention](https://www.linkedin.com/posts/raczyckikamil_overturemaps-geo-geospatial-activity-7275679432143446016-0d57?utm_source=share&utm_medium=member_android)
+- [New features update](https://www.linkedin.com/posts/raczyckikamil_city-summit-generator-activity-7276026160747020288-HmeL?utm_source=share&utm_medium=member_android)
 
 Bluesky:
-- https://bsky.app/profile/raczeq.bsky.social/post/3ld2of3xrnc2v
-- https://bsky.app/profile/raczeq.bsky.social/post/3ldfwqdrdlk2h
-- https://bsky.app/profile/raczeq.bsky.social/post/3ldrnj4uk6k2p
-
-Streamlit Discuss
-- https://discuss.streamlit.io/t/city-summit-generate-building-data-visualization-for-your-city/88248
+- [First results](https://bsky.app/profile/raczeq.bsky.social/post/3ld2of3xrnc2v)
+- [Rotating animation](https://bsky.app/profile/raczeq.bsky.social/post/3ldfwqdrdlk2h)
+- [Streamlit deploy mention](https://bsky.app/profile/raczeq.bsky.social/post/3ldrnj4uk6k2p)
 
 ---
 
@@ -320,4 +321,3 @@ TODO:
 
 - refactor to utm crs - faster
 - streamlit deploy
-- where posted on social media
