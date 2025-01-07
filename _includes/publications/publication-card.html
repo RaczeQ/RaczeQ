@@ -1,0 +1,66 @@
+{%- comment -%} Default Styles {%- endcomment -%}
+{%- assign card_style  = '' -%}
+{%- assign text_style  = 'text-themed' -%}
+{%- assign badge_style = 'badge-dark' -%}
+
+{%- comment -%} Update Styles {%- endcomment -%}
+{%- if publication.style == 'fill' -%}
+  {%- assign card_style = publication.color | prepend: 'bg-' -%}
+  {%- if publication.color != 'light' -%}
+    {%- assign text_style  = 'text-white' -%}
+    {%- assign badge_style = 'badge-light text-' -%}
+    {%- assign badge_style = badge_style | append: publication.color -%}
+  {%- endif -%}
+{%- else -%}
+  {%- assign card_style = publication.color | prepend: 'border border-' -%}
+  {%- if publication.color -%}
+    {%- assign badge_style =  publication.color | prepend: 'badge-' -%}
+  {%- endif -%}
+{%- endif -%}
+
+{%- comment -%} Determine Publication URL {%- endcomment -%}
+{%- if publication.external_url -%}
+  {%- assign publication_url = publication.external_url -%}
+{%- else -%}
+  {%- assign publication_url = publication.url | relative_url -%}
+{%- endif -%}
+    
+<div class="col-lg-12 my-3 wow animated fadeIn" data-wow-delay=".15s">
+  <div class="post card {{ card_style }}">
+    <div class="card-body {{ text_style }}">
+      <h3 class="card-title">{{ publication.title }}</h3>
+
+      <p class="card-text">
+        {%- if publication.conference -%}
+        <span style="opacity: 0.75;">{{ publication.conference }}</span>
+        {%- endif -%}
+      </p>
+
+      <p class="card-text">
+        {%- if publication.doi -%}
+        <a href="https://doi.org/{{ publication.doi }}" target="_blank" class="badge publication_badge {{ badge_style }}">{{ publication.doi }}</a>
+        {%- endif -%}
+
+        {%- if publication.arxiv_url -%}
+        <a href="{{ publication.arxiv_url }}" target="_blank" class="badge publication_badge {{ badge_style }}">arXiv</a>
+        {%- endif -%}
+
+        {%- if publication.rg_url -%}
+        <a href="{{ publication.rg_url }}" target="_blank" class="badge publication_badge {{ badge_style }}">ResearchGate</a>
+        {%- endif -%}
+      </p>
+      
+      <p class="card-text">
+        {%- if publication.abstract -%}
+        <details style="text-align: justify;">
+            <summary>Read abstract</summary>
+            {{ publication.abstract }}
+        </details>
+        {%- endif -%}
+      </p>
+    </div>
+    <div class="card-footer {{ text_style }}">
+      {{ publication.date | date_to_long_string }}
+    </div>
+  </div>
+</div>

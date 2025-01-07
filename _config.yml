@@ -56,6 +56,9 @@ collections:
   projects:
     output: true
     permalink: /projects/:name
+  publications:
+    output: false
+    # permalink: /publications/:name
 
 
 ### Disqus ###
@@ -92,6 +95,9 @@ defaults:
       type: "posts"
     values:
       comments: false                                   # Set to true to enable disqus comments
+  - scope:
+      path: ""
+      type: "publications" 
 
 
 ### Exclude from processing ###

@@ -1,0 +1,10 @@
+---
+title: "Transfer learning approach to bicycle-sharing systems' station location planning using OpenStreetMap data"
+style: border
+color: warning
+conference: "ARIC '21: Proceedings of the 4th ACM SIGSPATIAL International Workshop on Advances in Resilient and Intelligent Cities"
+abstract: Bicycle-sharing systems (BSS) have become a daily reality for many citizens of larger, wealthier cities in developed regions. However, planning the layout of bicycle-sharing stations usually requires expensive data gathering, surveying travel behavior and trip modelling followed by station layout optimization. Many smaller cities and towns, especially in developing areas, may have difficulty financing such projects. Planning a BSS also takes a considerable amount of time. Yet as the pandemic has shown us, municipalities will face the need to adapt rapidly to mobility shifts, which include citizens leaving public transport for bicycles. Laying out a bike sharing system quickly will become critical in addressing the increase in bike demand. This paper addresses the problem of cost and time in BSS layout design and proposes a new solution to streamline and facilitate the process of such planning by using spatial embedding methods. Based only on publicly available data from OpenStreetMap, and station layouts from 34 cities in Europe, a method has been developed to divide cities into micro-regions using the Uber H3 discrete global grid system and to indicate regions where it is worth placing a station based on existing systems in different cities using transfer learning. The result of the work is a mechanism to support planners in their decision making when planning a station layout with a choice of reference cities.
+doi: 10.1145/3486626.3493434
+arxiv_url: https://arxiv.org/abs/2111.00990
+rg_url: https://www.researchgate.net/publication/356371707_Transfer_learning_approach_to_bicycle-sharing_systems'_station_location_planning_using_OpenStreetMap_data
+---

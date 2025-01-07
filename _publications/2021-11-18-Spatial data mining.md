@@ -1,0 +1,10 @@
+---
+title: "Spatial Data Mining of Public Transport Incidents reported in Social Media"
+style: border
+color: info
+conference: "IWCTS '21: Proceedings of the 14th ACM SIGSPATIAL International Workshop on Computational Transportation Science"
+abstract: "Public transport agencies use social media as an essential tool for communicating mobility incidents to passengers. However, while the short term, day-to-day information about transport phenomena is usually posted in social media with low latency, its availability is short term as the content is rarely made an aggregated form. Social media communication of transport phenomena usually lacks GIS annotations as most social media platforms do not allow attaching non-POI GPS coordinates to posts. As a result, the analysis of transport phenomena information is minimal. We collected three years of social media posts of a polish public transport company with user comments. Through exploration, we infer a six-class transport information typology. We successfully build an information type classifier for social media posts, detect stop names in posts, and relate them to GPS coordinates, obtaining a spatial understanding of long-term aggregated phenomena. We show that our approach enables citizen science and use it to analyze the impact of three years of infrastructure incidents on passenger mobility, and the sentiment and reaction scale towards each of the events. All these results are achieved for Polish, an under-resourced language when it comes to spatial language understanding, especially in social media contexts. To improve the situation, we released two of our annotated data sets: social media posts with incident type labels and matched stop names and social media comments with the annotated sentiment. We also opensource the experimental codebase."
+doi: 10.1145/3486629.3490696
+arxiv_url: https://arxiv.org/abs/2110.05573
+rg_url: https://www.researchgate.net/publication/356364549_Spatial_data_mining_of_public_transport_incidents_reported_in_social_media
+---

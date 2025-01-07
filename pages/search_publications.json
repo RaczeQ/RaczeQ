@@ -1,0 +1,17 @@
+---
+layout: null
+permalink: /search_publications.json
+---
+[
+  {% for publication in site.publications reversed %}
+    {
+      "title"         : "{{ publication.title | escape }}",
+      "abstract"      : "{{ publication.abstract | escape }}",
+      "conference"    : "{{ publication.conference | escape }}",
+      "arxiv"         : "{{ publication.arxiv_url }}",
+      "doi"           : "{{ publication.doi }}",
+      "research_gate" : "{{ publication.rg_url }}",
+      "date"          : "{{ publication.date }}"
+    } {% unless forloop.last %},{% endunless %}
+  {% endfor %}
+]
