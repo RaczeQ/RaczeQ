@@ -1,7 +1,25 @@
+<p class="card-text px-3">
+  <span>You can click on badges (<span class="badge publication_badge badge-primary">10.1000/100</span> <span class="badge publication_badge badge-warning">arXiv</span> <span class="badge badge-info">ResearchGate</span>) to read the publication.</span>
+</p>
+
+<p class="card-text">
+  {%- if publication.doi -%}
+  <a href="https://doi.org/{{ publication.doi }}" target="_blank" class="badge publication_badge {{ badge_style }}">{{ publication.doi }}</a>
+  {%- endif -%}
+
+  {%- if publication.arxiv_url -%}
+  <a href="{{ publication.arxiv_url }}" target="_blank" class="badge publication_badge {{ badge_style }}">arXiv</a>
+  {%- endif -%}
+
+  {%- if publication.rg_url -%}
+  <a href="{{ publication.rg_url }}" target="_blank" class="badge publication_badge {{ badge_style }}">ResearchGate</a>
+  {%- endif -%}
+</p>
+
 <div class="card-group mt-2">
 
-    {% for publication in site.publications reversed %}
-      {% include publications/publication-card.html %}
-    {% endfor %}
+  {% for publication in site.publications reversed %}
+    {% include publications/publication-card.html %}
+  {% endfor %}
     
-  </div>
+</div>
