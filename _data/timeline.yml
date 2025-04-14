@@ -1,6 +1,17 @@
+- title: Senior Data Scientist, <a href="https://dataplace.ai/">dataplace.ai</a>, PL
+  from: Apr 2025
+  to: present
+  description: >-
+    I have joined the offline geospatial analytics company dataplace.ai focused on using the
+    real traffic data in Location Intelligence tasks. Additionally, I was contibuting to the
+    project Trafficore, which was co-founded by the EU, focused on recreating user movement
+    trajectories from sparse geolocation signals.
+    Technologies used: Python, Snowflake, Databricks, Apache Sedona, GeoPandas, Shapely,
+    scikit-learn, XGBoost/CatBoost, DuckDB, Polars, PyArrow, Seaborn.
+
 - title: Senior Data Scientist, <a href="https://about.allegro.eu/">Allegro</a>, PL
   from: Sep 2024
-  to: present
+  to: Mar 2025
   description: >-
     I have been promoted to the senior role after delivering geospatial projects
     influencing platform logistics expansion. After the promotion, I have been tasked with
