@@ -113,3 +113,4 @@ exclude:
   - LICENSE
   - "*.log"
   - vendor
+  - .github/workflows/jekyll.yml
