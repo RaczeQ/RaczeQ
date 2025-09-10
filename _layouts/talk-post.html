@@ -44,6 +44,15 @@ layout: page
 <br />
 {% endif %}
 
+{% if page.slides != empty %}
+<p>
+<h3 style="text-align: center;"><b>Slides</b></h3>
+{% pdf "{{ page.slides }}" no_link %}
+</p>
+
+<br />
+{% endif %}
+
 {% if page.images != empty %}
 <p>
 <h3 style="text-align: center;"><b>Images</b></h3>
@@ -54,15 +63,6 @@ Attibution: {{ page.images_attribution }}
 <img src="{{ image_url }}" class="figure-img img-fluid rounded">
 {% endfor %}
 
-</p>
-
-<br />
-{% endif %}
-
-{% if page.slides != empty %}
-<p>
-<h3 style="text-align: center;"><b>Slides</b></h3>
-<object data="{{ page.slides }}" type='application/pdf' width="100%" style="aspect-ratio: 14/9;" />
 </p>
 
 <br />
