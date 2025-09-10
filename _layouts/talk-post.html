@@ -1,0 +1,69 @@
+---
+layout: page
+---
+
+<h1><b>{{ page.title }}</b></h1>
+
+<p class="post-metadata text-muted">
+  {{ page.date | date_to_long_string }} - {{ page.location }}
+
+    <br />
+
+  {%- if page.tags != empty -%}
+  Tags:
+  {% for tag in page.tags %}
+  <a class="text-decoration-none no-underline" href="{{ tag | slugify | prepend:'/talks/tags#' | relative_url }}">
+    <span class="tag badge badge-pill text-primary border border-primary">{{ tag }}</span>
+  </a>
+  {% endfor %}
+  {%- endif -%}
+
+</p>
+
+<p>
+{% if page.event_url != empty %}
+<h2 style="text-align: center;"><b><a href="{{ page.event_url }}" target="_blank" >{{ page.event }}</a></b></h2>
+{% else %}
+<h2 style="text-align: center;"><b>{{ page.event }}</b></h2>
+{% endif %}
+
+{% if page.event_logo != empty %}
+<img src="{{ page.event_logo }}" class="figure-img img-fluid rounded" alt="{{ include.alt | default: include.caption }}"
+  style="max-width: 200px; max-height: 200px;">
+{% endif %}
+</p>
+
+<br />
+
+{% if page.youtube_id != empty %}
+<p>
+<h3 style="text-align: center;"><b>Video</b></h3>
+{% include elements/video.html id=page.youtube_id %}
+</p>
+
+<br />
+{% endif %}
+
+{% if page.images != empty %}
+<p>
+<h3 style="text-align: center;"><b>Images</b></h3>
+
+Attibution: {{ page.images_attribution }}
+
+{% for image_url in page.images %}
+<img src="{{ image_url }}" class="figure-img img-fluid rounded">
+{% endfor %}
+
+</p>
+
+<br />
+{% endif %}
+
+{% if page.slides != empty %}
+<p>
+<h3 style="text-align: center;"><b>Slides</b></h3>
+<object data="{{ page.slides }}" type='application/pdf' width="100%" style="aspect-ratio: 14/9;" />
+</p>
+
+<br />
+{% endif %}

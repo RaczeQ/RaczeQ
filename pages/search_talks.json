@@ -1,0 +1,15 @@
+---
+layout: null
+permalink: /search_talks.json
+---
+[
+  {% for talk in site.talks reversed %}
+    {
+      "title"         : "{{ talk.title | escape }}",
+      "event"         : "{{ talk.event | escape }}",
+      "date"          : "{{ talk.date }}",
+      "location"      : "{{ talk.location }}",
+      "url"           : "{{ talk.external_url | default: talk.url | relative_url }}"
+    } {% unless forloop.last %},{% endunless %}
+  {% endfor %}
+]

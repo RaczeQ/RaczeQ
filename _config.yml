@@ -12,6 +12,7 @@ open_new_tab        : true                    # Opens external URLs in new tab (
 ### Plugins ###
 plugins:
   - jemoji
+  - jekyll-pdf-embed
 
 
 ### Navbar Settings ###
@@ -59,6 +60,9 @@ collections:
   publications:
     output: false
     permalink: /publications/:name
+  talks:
+    output: true
+    permalink: /talks/:name
 
 
 ### Disqus ###
@@ -95,6 +99,11 @@ defaults:
       type: "posts"
     values:
       comments: false                                   # Set to true to enable disqus comments
+  - scope:
+      path: ""
+      type: "talks"
+    values:
+      layout: "talk-post"
 
 
 ### Exclude from processing ###

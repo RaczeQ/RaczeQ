@@ -1,0 +1,7 @@
+<div class="card-group mt-2">
+
+  {% for talk in site.talks reversed %}
+    {% include talks/talk-card.html %}
+  {% endfor %}
+  
+</div>

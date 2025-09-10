@@ -1,0 +1,49 @@
+{%- comment -%} Default Styles {%- endcomment -%}
+{%- assign card_style  = '' -%}
+{%- assign text_style  = 'text-themed' -%}
+{%- assign badge_style = 'badge-dark' -%}
+
+{%- comment -%} Update Styles {%- endcomment -%}
+{%- if talk.style == 'fill' -%}
+  {%- assign card_style = talk.color | prepend: 'bg-' -%}
+  {%- if talk.color != 'light' -%}
+    {%- assign text_style  = 'text-white' -%}
+    {%- assign badge_style = 'badge-light text-' -%}
+    {%- assign badge_style = badge_style | append: talk.color -%}
+  {%- endif -%}
+{%- else -%}
+  {%- assign card_style = talk.color | prepend: 'border border-' -%}
+  {%- if talk.color -%}
+    {%- assign badge_style =  talk.color | prepend: 'badge-' -%}
+  {%- endif -%}
+{%- endif -%}
+
+{%- comment -%} Determine Post URL {%- endcomment -%}
+{%- if talk.external_url -%}
+  {%- assign post_url = talk.external_url -%}
+{%- else -%}
+  {%- assign post_url = talk.url | relative_url -%}
+{%- endif -%}
+    
+<div class="col-lg-6 my-3 wow animated fadeIn" data-wow-delay=".15s">
+  <a href="{{ post_url }}" class="post card {{ card_style }}" {%- if talk.external_url and site.open_new_tab -%} target="_blank" {%- endif -%}>
+    <div class="card-body {{ text_style }}">
+      <h3 class="card-title">{{ talk.title }}</h3>
+      <p class="card-text">
+        {% for tag in talk.tags %}
+        <span class="badge {{ badge_style }}">{{ tag }}</span>
+        {% endfor %}
+      </p>
+      <p class="card-text">
+        {%- if talk.description -%}
+        {{ talk.description }}
+        {%- else -%}
+        {{ talk.content | truncatewords: 25, "<small><i>  read more...</i></small>" }}
+        {%- endif -%}
+      </p>
+    </div>
+    <div class="card-footer {{ text_style }}">
+      {{ talk.event }} - {{ talk.date | date_to_long_string }} - {{ talk.location }}
+    </div>
+  </a>
+</div>
