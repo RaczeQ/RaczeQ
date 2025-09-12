@@ -2,6 +2,12 @@
 layout: page
 ---
 
+{% if page.resources != empty or page.youtube_id != empty or page.slides != empty %}
+  {% assign show_resources = true %}
+{% else %}
+  {% assign show_resources = false %}
+{% endif %}
+
 <h1><b>{{ page.title }}</b></h1>
 
 <p class="post-metadata text-muted">
@@ -34,6 +40,34 @@ layout: page
 </p>
 
 <br />
+
+{% if show_resources %}
+<p>
+  <h3 style="text-align: center;"><b>Resources</b></h3>
+
+  <ul>
+{% endif %}
+
+{% if page.slides != empty %}
+<li><a href="{{ page.slides }}" target="_blank">Slides PDF</a></li>
+{% endif %}
+
+{% if page.youtube_id != empty %}
+<li><a href="https://youtu.be/{{ page.youtube_id }}" target="_blank">YouTube link</a></li>
+{% endif %}
+
+{%- if page.resources != empty -%}
+  {% for resource in page.resources %}
+  <li><a href="{{resource.url}}" target="_blank">{{resource.name}}</a></li>
+  {% endfor %}
+{%- endif -%}
+
+{% if show_resources %}
+  </ul>
+</p>
+
+<br />
+{% endif %}
 
 {% if page.youtube_id != empty %}
 <p>
