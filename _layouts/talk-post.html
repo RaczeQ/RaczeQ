@@ -2,11 +2,29 @@
 layout: page
 ---
 
-{% if page.resources != empty or page.youtube_id != empty or page.slides != empty %}
+{% assign show_resources = false %}
+{% assign show_images = false %}
+{% assign show_video = false %}
+{% assign show_pdf = false %}
+
+{% if page.slides != nil and page.slides != "" %}
+  {% assign show_pdf = true %}
   {% assign show_resources = true %}
-{% else %}
-  {% assign show_resources = false %}
 {% endif %}
+
+{% if page.youtube_id != nil and page.youtube_id != "" %}
+  {% assign show_video = true %}
+  {% assign show_resources = true %}
+{% endif %}
+
+{% for resource in page.resources %}
+  {% assign show_resources = true %}
+{% endfor %}
+
+{% for image in page.images %}
+  {% assign show_images = true %}
+{% endfor %}
+
 
 <h1><b>{{ page.title }}</b></h1>
 
@@ -27,7 +45,7 @@ layout: page
 </p>
 
 <p>
-{% if page.event_url != empty %}
+{% if page.event_url contains "http" %}
 <h2 style="text-align: center;"><b><a href="{{ page.event_url }}" target="_blank" >{{ page.event }}</a></b></h2>
 {% else %}
 <h2 style="text-align: center;"><b>{{ page.event }}</b></h2>
@@ -48,19 +66,17 @@ layout: page
   <ul>
 {% endif %}
 
-{% if page.slides != empty %}
+{% if show_pdf %}
 <li><a href="{{ page.slides }}" target="_blank">Slides PDF</a></li>
 {% endif %}
 
-{% if page.youtube_id != empty %}
+{% if show_video %}
 <li><a href="https://youtu.be/{{ page.youtube_id }}" target="_blank">YouTube link</a></li>
 {% endif %}
 
-{%- if page.resources != empty -%}
-  {% for resource in page.resources %}
-  <li><a href="{{resource.url}}" target="_blank">{{resource.name}}</a></li>
-  {% endfor %}
-{%- endif -%}
+{% for resource in page.resources %}
+<li><a href="{{resource.url}}" target="_blank">{{resource.name}}</a></li>
+{% endfor %}
 
 {% if show_resources %}
   </ul>
@@ -69,7 +85,7 @@ layout: page
 <br />
 {% endif %}
 
-{% if page.youtube_id != empty %}
+{% if show_video %}
 <p>
 <h3 style="text-align: center;"><b>Video</b></h3>
 {% include elements/video.html id=page.youtube_id %}
@@ -78,7 +94,7 @@ layout: page
 <br />
 {% endif %}
 
-{% if page.slides != empty %}
+{% if show_pdf %}
 <p>
 <h3 style="text-align: center;"><b>Slides</b></h3>
 {% pdf "{{ page.slides }}" no_link %}
@@ -87,7 +103,7 @@ layout: page
 <br />
 {% endif %}
 
-{% if page.images != empty %}
+{% if show_images %}
 <p>
 <h3 style="text-align: center;"><b>Images</b></h3>
 

@@ -4,7 +4,8 @@
 {%- assign badge_style = 'badge-dark' -%}
 
 {%- comment -%} Update Styles {%- endcomment -%}
-{%- if talk.style == 'fill' -%}
+
+<!-- {%- if talk.style == 'fill' -%}
   {%- assign card_style = talk.color | prepend: 'bg-' -%}
   {%- if talk.color != 'light' -%}
     {%- assign text_style  = 'text-white' -%}
@@ -16,7 +17,19 @@
   {%- if talk.color -%}
     {%- assign badge_style =  talk.color | prepend: 'badge-' -%}
   {%- endif -%}
+{%- endif -%} -->
+
+{%- if talk.type == 'Tutorial' -%}
+  {%- assign card_style = 'border border-info' -%}
+  {%- assign badge_style = 'badge-info' -%}
+{%- elsif talk.type == 'Talk' -%}
+  {%- assign card_style = 'border border-success' -%}
+  {%- assign badge_style = 'badge-success' -%}
+{%- elsif talk.type == 'Interview' -%}
+  {%- assign card_style = 'border border-warning' -%}
+  {%- assign badge_style = 'badge-warning' -%}
 {%- endif -%}
+
 
 {%- comment -%} Determine Post URL {%- endcomment -%}
 {%- if talk.external_url -%}
@@ -26,7 +39,7 @@
 {%- endif -%}
     
 <div class="col-lg-6 my-3 wow animated fadeIn" data-wow-delay=".15s">
-  <a href="{{ post_url }}" class="post card {{ card_style }}" {%- if talk.external_url and site.open_new_tab -%} target="_blank" {%- endif -%}>
+  <a href="{{ post_url }}" class="post card {{ card_style }}">
     <div class="card-body {{ text_style }}">
       <h3 class="card-title">{{ talk.title }}</h3>
       <p class="card-text">
@@ -34,12 +47,8 @@
         <span class="badge {{ badge_style }}">{{ tag }}</span>
         {% endfor %}
       </p>
-      <p class="card-text">
-        {%- if talk.description -%}
-        {{ talk.description }}
-        {%- else -%}
-        {{ talk.content | truncatewords: 25, "<small><i>  read more...</i></small>" }}
-        {%- endif -%}
+      <p class="card-text text-muted">
+        {{ talk.type }}
       </p>
     </div>
     <div class="card-footer {{ text_style }}">
