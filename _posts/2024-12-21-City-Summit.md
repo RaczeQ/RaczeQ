@@ -6,7 +6,7 @@ color: success
 description: Summary of building shapes exploration from the OvertureMaps dataset.
 ---
 
-{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/20_cities_grid.png" caption="Final visualisation for 20 different cities around the world." %}
+{% include elements/figure.html image="/assets/images/blog/city_summit/20_cities_grid.png" caption="Final visualisation for 20 different cities around the world." %}
 
 ## Back story
 
@@ -18,7 +18,7 @@ The results of this project can be accessed on Streamlit: [https://city-summit.s
 
 You can also run the code locally using [this Jupyter notebook](https://github.com/RaczeQ/city-summit/blob/main/code.ipynb).
 
-{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/projects/city_summit.png" caption="City Summit project screenshot" %}
+{% include elements/figure.html image="/assets/images/projects/city_summit.png" caption="City Summit project screenshot" %}
 
 ## Getting the data
 
@@ -84,7 +84,7 @@ After thinking things through, and after reviewing the Shapely library documenta
 
 Using the `minimum_rotated_rectangle` function, I can get a minimum rectangle surrounding a given building, a de facto rotated bounding box. What if I just rotate this rectangle so that it is equal to the real bounding box? The idea was that this configuration should keep the footprint of a building the smallest and most edges should be in horizontal and vertical orientations.
 
-{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/rotated_building.png" caption="The difference between original and rotated building with bounding box and a minimum rotated rectangle." %}
+{% include elements/figure.html image="/assets/images/blog/city_summit/rotated_building.png" caption="The difference between original and rotated building with bounding box and a minimum rotated rectangle." %}
 
 To get the right angle, I iterated all the points of the resulting rectangle in turn, counted the azimuth between two points and rotated the shape by the negative value obtained. But in this way I will obtain 4 angles, which will be two pairs in the horizontal and vertical axis. How do I choose one angle from these 4? I decided that I wanted the rotated building to be longer than taller (width >= height), and for the centroid to be in the middle, or to be above half the height of the rectangle.
 
@@ -126,17 +126,17 @@ Now that I think about it, it would be possible to choose the right angle of rot
 
 To start, I used the `plot()` function from the GeoPandas library displaying only the edges of the buildings.
 
-{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/all_buildings_edges_only.png" caption="All building shapes outlines visualized." %}
+{% include elements/figure.html image="/assets/images/blog/city_summit/all_buildings_edges_only.png" caption="All building shapes outlines visualized." %}
 
 To make these less cluttered, I divided the set of buildings into small and large based on the total area. I also added a slight background colouring for the buildings. 
 
-{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/small_buildings.png" caption="Small buildings visualization." %}
+{% include elements/figure.html image="/assets/images/blog/city_summit/small_buildings.png" caption="Small buildings visualization." %}
 
-{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/big_buildings.png" caption="Bigger buildings visualization." %}
+{% include elements/figure.html image="/assets/images/blog/city_summit/big_buildings.png" caption="Bigger buildings visualization." %}
 
 I have also experimented with leaving only vertices, without edges.
 
-{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/big_buildings_dots.png" caption="Bigger buildings vertices only visualization." %}
+{% include elements/figure.html image="/assets/images/blog/city_summit/big_buildings_dots.png" caption="Bigger buildings vertices only visualization." %}
 
 ## Switch to the heightmap
 
@@ -196,7 +196,7 @@ axes[1].set_title("Log colour scale")
 plt.show()
 ```
 
-{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/heightmap_plt_2d_plot.png" caption="Generated heightmap in linear and logarithmic colour scales." %}
+{% include elements/figure.html image="/assets/images/blog/city_summit/heightmap_plt_2d_plot.png" caption="Generated heightmap in linear and logarithmic colour scales." %}
 
 As you can see, the centre of the heightmap is dominated by extremely high values. This makes sense; after all, most buildings in cities have a fairly small footprint. To discover more detail, it is useful to display the values on a logarithmic scale.
 
@@ -204,7 +204,7 @@ As you can see, the centre of the heightmap is dominated by extremely high value
 
 Having a heightmap, I began to wonder what it would look like in 3D. Using the Surface plot function from the Plotly library, I was able to generate an interactive visualisation for the calculated data.
 
-{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/plotly_surface_linear_scale.png" caption="Basic 3D surface plot." %}
+{% include elements/figure.html image="/assets/images/blog/city_summit/plotly_surface_linear_scale.png" caption="Basic 3D surface plot." %}
 
 #### Loading the palette
 
@@ -232,7 +232,7 @@ plotly_map = list(
 )
 ```
 
-{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/pypalletes_docs.png" caption="Screenshot from the <a href='https://python-graph-gallery.com/color-palette-finder/' target='_blank'>Python Color Palette Finder</a> website." %}
+{% include elements/figure.html image="/assets/images/blog/city_summit/pypalletes_docs.png" caption="Screenshot from the <a href='https://python-graph-gallery.com/color-palette-finder/' target='_blank'>Python Color Palette Finder</a> website." %}
 
 #### Polishing the visualization
 
@@ -279,11 +279,11 @@ fig.update_layout(
 )
 ```
 
-{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/plotly_surface_log_scale.png" caption="Final visualisation." %}
+{% include elements/figure.html image="/assets/images/blog/city_summit/plotly_surface_log_scale.png" caption="Final visualisation." %}
 
 Just for comparison, I have also created a visualization for buildings without rotating them.
 
-{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/plotly_surface_not_rotated.png" caption="Summit with buildings left in their original orientation." %}
+{% include elements/figure.html image="/assets/images/blog/city_summit/plotly_surface_not_rotated.png" caption="Summit with buildings left in their original orientation." %}
 
 ## Streamlit implementation
 
@@ -295,13 +295,13 @@ I have never deployed any Python app on the internet, but I heard about Streamli
 
 I was pleasantly surprised by how easy it is to create a Streamlit application deployed in the Community Cloud. You log int with your GitHub account, select a template (I went with the Blank one), choose a name / domain and everything is created for you. Then you can start with coding using GitHub Codespaces right away. It was also my first time using the Codespaces and I must admit that it is a very convenient process (though I am an avid VS Code user).
 
-{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/streamlit_creator.png" caption="Streamlit project creator form." %}
+{% include elements/figure.html image="/assets/images/blog/city_summit/streamlit_creator.png" caption="Streamlit project creator form." %}
 
 #### Coding experience
 
 Streamlit documentation is really well maintained with interactive examples. I was able to quickly draft a conditional form for the user with state caching and values validation (mainly Nominatim geocoding errors or limiting the max area of interest).
 
-{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/streamlit_form.png" caption="City Summit parameters form with values validation." %}
+{% include elements/figure.html image="/assets/images/blog/city_summit/streamlit_form.png" caption="City Summit parameters form with values validation." %}
 
 Porting the code from my notebook required some changes, mainly to the tracking functions that displayed progress - I was using a `track` function from `rich.progress`, but had to wrap it with manual `st.progress` calls in every loop iteration.
 
@@ -312,7 +312,7 @@ To speed up the calculations, I opted to replace geometry projection from Azimut
 
 Additionally, to lower the memory usage, I've implemented batch processing for downloaded buildings data. `OvertureMaestro` is downloading Overture Maps data into a GeoParquet file. Instead of loading it all to a `GeoDataFrame` with `read_parquet` function, I'm iterating over Arrow batches with `PyArrow` library to keep the memory usage low.
 
-{% include elements/figure.html image="https://raw.githubusercontent.com/RaczeQ/RaczeQ/refs/heads/gh-pages/assets/images/blog/city_summit/streamlit_result.png" caption="City Summit result for the city of London." %}
+{% include elements/figure.html image="/assets/images/blog/city_summit/streamlit_result.png" caption="City Summit result for the city of London." %}
 
 Overall I was happy with how fast I was able to push out a finalized app to the public. Automatic theme adjustment for the Plotly chart with `st.plotly_chart` was also really handy. All required calculations are saved on disk, so consequent runs do not have to redo all the steps (until the app is stopped because of no activity).
 
