@@ -1,0 +1,29 @@
+<link href="https://vjs.zencdn.net/8.23.4/video-js.css" rel="stylesheet" />
+<style>
+  .video-js {
+    margin-top: 1rem;
+  }
+
+  .vjs-poster img {
+    margin: 0 !important;
+  }
+</style>
+
+<figure class="figure w-100">
+  <video id="{{ include.id }}" class="video-js" controls preload="auto" data-setup="{}" loop="true" style="width: 100%;"
+    fluid="true" poster="{{ include.poster }}">
+    {% for url in include.urls %}
+    <source src="{{ url }}" type="video/mp4" />
+    {% endfor %}
+    <p class="vjs-no-js">
+      To view this video please enable JavaScript, and consider upgrading to a
+      web browser that
+      <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
+    </p>
+  </video>
+  {%- if include.caption -%}
+  <figcaption class="figure-caption text-center" style="margin-top: 1rem;">{{ include.caption }}</figcaption>
+  {%- endif -%}
+</figure>
+
+<script src="https://vjs.zencdn.net/8.23.4/video.min.js"></script>
