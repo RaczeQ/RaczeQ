@@ -1,5 +1,5 @@
 <figure class="figure w-100">
-  <div style="display: flex;">
+  <div style="display: flex; gap: 0.5rem;">
     {% for url in include.urls %}
     <img src="{{ url | relative_url }}" class="figure-img img-fluid rounded" style="flex: 1; width: 100%; min-width: 0;">
     {% endfor %}
