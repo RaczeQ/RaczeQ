@@ -274,9 +274,22 @@ After seeing the gaps and the boundary wrapping back inside the geometry, I had 
 {% assign concave_hull_images_urls = "/assets/images/blog/chrono_isochrone/concave_hull_test.png,/assets/images/blog/chrono_isochrone/rays_test_1.png,/assets/images/blog/chrono_isochrone/rays_test_2.png" | split: ',' %}
 {% include posts/figure_multiple_images.html urls=concave_hull_images_urls caption="Concave hull tests with rays." %}
 
-This approach has a one problem though - concave hull function has a parameter that should probably be tuned for a given example. I wanted to implement a solution that will be working anywhere automatically, and I experimented with automatic increasing of the `ratio` parameter until the ray intersects only once for each angle. The sudden jumps between close and far points created unsatisfying final results, so I was looking for another approach.
+This approach has a one problem though - concave hull function has a parameter that should probably be tuned for a given example. I wanted to implement a solution that will be working anywhere automatically, and I experimented with automatic increasing of the `ratio` parameter until the ray intersects only once for each angle. Unfortunately, the sudden jumps between closer and farther points created unsatisfying final results, so I was looking for another approach.
+
+---
+
+My next idea was to select all the end points of the farthest edges from the clipped graph and combine them into a polygon. I assumed that none of the nodes were located at a perfect clipping distance, so I took only the edges extensions into consideration.
+
+I selected all the end points of the clipped edges, sorted them by the angle and combined into a boundary.
+
+{% assign end_points_1_images_urls = "/assets/images/blog/chrono_isochrone/end_points_test_1.png,/assets/images/blog/chrono_isochrone/edge_points_test_1_zoom.png" | split: ',' %}
+{% include posts/figure_multiple_images.html urls=end_points_1_images_urls caption="First test with the edges end points." %}
+
+As you can see there are clearly parts of the graph that are outside the boundary ...
 
 
+...
+Now that I write this article, it occured to me that I could have used
 
 
 #### Clipping geometries
