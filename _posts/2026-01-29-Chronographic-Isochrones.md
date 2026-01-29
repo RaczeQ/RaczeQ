@@ -11,11 +11,11 @@ description: Exploration of automatic generation of chronographic isochrones wit
 
 ## Inspiration
 
-Last year I saw an article by [John Nelson](https://www.esri.com/arcgis-blog/author/j_nelson) from ESRI about [Time-warped walkability mapping in ArcGIS Pro](https://www.esri.com/arcgis-blog/products/arcgis-pro/mapping/time-warp-walkability-mapping-in-arcgis-pro) ([LinkedIn post](https://www.linkedin.com/posts/johnmnelson_heres-how-to-make-a-time-warped-walkability-activity-7358137015327985664-7lTN?utm_source=share&utm_medium=member_desktop&rcm=ACoAAB4C-1oBjSoQnpHjRs32Y4HNXkKZcoPnGyQ)).
+Last year I saw an article by [John Nelson](https://www.esri.com/arcgis-blog/author/j_nelson) about [Time-warped walkability mapping in ArcGIS Pro](https://www.esri.com/arcgis-blog/products/arcgis-pro/mapping/time-warp-walkability-mapping-in-arcgis-pro) ([LinkedIn post](https://www.linkedin.com/posts/johnmnelson_heres-how-to-make-a-time-warped-walkability-activity-7358137015327985664-7lTN?utm_source=share&utm_medium=member_desktop&rcm=ACoAAB4C-1oBjSoQnpHjRs32Y4HNXkKZcoPnGyQ)).
 
 {% include elements/figure.html image="/assets/images/blog/chrono_isochrone/johnnelson_timewarp.jpg" caption="Time-warped walkability map. Credit: John Nelson." %}
 
-Later I have also stumbled upon [Katie Walker](https://www.linkedin.com/in/kqwalker/)'s LinkedIn [post](https://www.linkedin.com/posts/kqwalker_30daymapchallenge-gis-arcgispro-activity-7392576575428378624-MG9z?utm_source=social_share_send&utm_medium=member_desktop_web&rcm=ACoAAB4C-1oBjSoQnpHjRs32Y4HNXkKZcoPnGyQ) during the #30DayMapChallenge and decided to give it a try myself.
+Later I have also stumbled upon [Katie Walker](https://www.linkedin.com/in/kqwalker/)'s LinkedIn [post](https://www.linkedin.com/posts/kqwalker_30daymapchallenge-gis-arcgispro-activity-7392576575428378624-MG9z?utm_source=social_share_send&utm_medium=member_desktop_web&rcm=ACoAAB4C-1oBjSoQnpHjRs32Y4HNXkKZcoPnGyQ) during the [#30DayMapChallenge](https://30daymapchallenge.com/) and decided to give it a try myself.
 
 There is one problem though - I don't use ArcGIS. Or even QGIS for that matter. I code everything geo 🌍 related in Python (or SQL) and visualize it in Jupyter notebooks, or Kepler.
 
@@ -41,7 +41,21 @@ From the beginning I knew that using [OSMnx](https://github.com/gboeing/osmnx) b
 
 The only thing that I wasn't sure how to tackle, was the whole isochrone boundary generation from the graph.
 
-I have seen some articles or tutorials on this matter:
+---
+
+#### But what even are isochrones?
+
+The isochrone is a contour line/curve (isoline) that connects the points of equal travel time (definition from [OpenStreetMap Wiki](https://wiki.openstreetmap.org/wiki/Isochrone)). There is also mention of isodistance, which connects points of equal travel distance.
+
+I'm used to seeing the sprawling intricate shapes on the map showing the area that can be reached on a foot or by a car. It's no surprise that I was intrigued when I saw John's approach on trying to display isochrones in a "chronographic" style.
+
+As far as I'm aware, John is the first person to suggest the term chronographic (again, no surprise, it's a really niche topic), but I think it's suitable and I will stick with that. I'm not gonna dive deep into the etymology of this term 🐇.
+
+Let's go back to the coding process.
+
+---
+
+I have seen some articles or tutorials on how to create isochrones / isodistances in Python:
 
 - [OSMnx isolines example notebook](https://github.com/gboeing/osmnx-examples/blob/main/notebooks/13-isolines-isochrones.ipynb) - showing simple convex hull based isochrones and also some buffered geometries.
 {% assign osmnx_images_urls = "/assets/images/blog/chrono_isochrone/isolines_osmnx_convex_hull.png,/assets/images/blog/chrono_isochrone/isolines_osmnx_buffer.png" | split: ',' %}
@@ -63,7 +77,7 @@ Based on those examples I knew that I would like to avoid using convex hull oper
 
 ### Getting the streets network
 
-To create any isochrones, I needed to have a street network in the form of a graph. Naturally, I have used the [OSMnx](https://github.com/gboeing/osmnx) library, which was created exactly for this reason.
+To create any isochrone, I needed to have a street network in the form of a graph. Naturally, I have used the [OSMnx](https://github.com/gboeing/osmnx) library, which was created exactly for this reason.
 
 I started by defining the center point for the isochrones and the max distance they should cover.
 
@@ -160,14 +174,14 @@ The simplest option is to use the convex hull operation.
 
 The obvious problem with this approach is that it captures too big of an area and the boundary if farther than expected distance.
 
-I tried to follow the Davis O'Sullivan's approach with the _concave_ hull operation. It tries to wrap all the extending points with a boundary, ideally without leaving such big distances between the boundary and wrapped geometry.
+I tried to follow the David O'Sullivan's approach with the _concave_ hull operation. It tries to wrap all the extending points with a boundary, ideally without leaving big gaps between the boundary and wrapped geometry.
 
-After seeing the gaps and the boundary wrapping back inside the geometry, I had an idea to project the rays from the center point and locate the farthest intersection point and then combine those into the boundary.
+After seeing the result and the boundary that wraps back inside the street network, I had an idea to project the rays from the center point and locate the farthest intersection point and then combine those into the boundary.
 
 {% assign concave_hull_images_urls = "/assets/images/blog/chrono_isochrone/concave_hull_test.png,/assets/images/blog/chrono_isochrone/rays_test_1.png,/assets/images/blog/chrono_isochrone/rays_test_2.png" | split: ',' %}
 {% include posts/figure_multiple_images.html urls=concave_hull_images_urls caption="Concave hull tests with rays." %}
 
-This approach has a one problem though - concave hull function has a parameter that should probably be tuned for a given example. I wanted to implement a solution that will be working anywhere automatically, and I experimented with automatic increasing of the `ratio` parameter until the ray intersects only once for each angle. Unfortunately, the sudden jumps between closer and farther points created unsatisfying final results, so I was looking for another approach.
+This approach has a one problem though - concave hull function has a parameter that should probably be tuned for a given example. I wanted to implement a solution that will be working anywhere automatically, and I experimented with automatic increasing of the `ratio` parameter until the ray intersects only once for each angle. Unfortunately, the sudden jumps between closer and farther points created unsatisfying final result, so I was looking for another approach.
 
 ---
 
@@ -181,7 +195,7 @@ I selected all the end points of the clipped edges, sorted them by the angle and
 As you can see there are clearly parts of the graph that are outside the boundary. To fix it, I used the `polygonize` operation on the union of graph edges and the previous boundary.
 
 {% assign end_points_2_images_urls = "/assets/images/blog/chrono_isochrone/end_points_test_2.png,/assets/images/blog/chrono_isochrone/edge_points_test_2_zoom.png" | split: ',' %}
-{% include posts/figure_multiple_images.html urls=end_points_2_images_urls caption="Second test with the edges end points. Blue regions are the result of the polygonize operation, white edge is the old boundary and the edge orange is the new boundary." %}
+{% include posts/figure_multiple_images.html urls=end_points_2_images_urls caption="Second test with the edges end points. Blue regions are the result of the polygonize operation, white edge is the old boundary and the orange edge is the new boundary." %}
 
 <details>
     <summary>See the code for finding the boundary</summary>
@@ -199,7 +213,7 @@ These are quite signifact pitfalls in this approach, but I didn't have more time
 
 ### Clipping geometries
 
-To plot the edges and building geometries, I just clip it with the boundaries geometries from the previous step. It is a quite trivial operation. Edges are already clipped to the required reachable distance.
+To plot the edges and building geometries, I just clip it with the boundary geometry from the previous step. It is a quite trivial operation. Edges are already clipped to the required reachable distance.
 
 ```python
 # clip the buildings with the boundary geometry and explode MultiPolygons into Polygons
@@ -214,9 +228,69 @@ clipped_buildings = clipped_buildings[clipped_buildings.geom_type == "Polygon"]
 
 ### Transforming geometries
 
+This is probably the most _important_ operation in the whole pipeline. John Nelson in his tutorial, showed how to manually drag some points on the isochrone boundary to stretch the image into a circle. I wanted to achieve this result automatically without any manual input.
+
+I decided to transform the geometries from longitude/latitude coordinates to fit it inside a unit circle using polar coordinates.
+
+To achieve that, for every vertex of every shape, there is a line projected from the center to this vertex and then farther to the isochrone boundary. Then the distance from the center to the vertex and to the boundary is calculated.
+
+Based on the ratio of those two distances, I can generate a new projected coordinate using the same angle and a normalised vector length.
+
+{% include elements/figure.html image="/assets/images/blog/chrono_isochrone/transformation_single_building.png" caption="Single building transformation example." %}
+
+You can see in this example how the ratios are calculated and then preserved in the chronographic isochrone.
+
+Below you can see the final first draft:
+
+{% include elements/figure.html image="/assets/images/blog/chrono_isochrone/transformation_no_interpolation.png" caption="First transformation draft." %}
+
+I think you can notice some glaring issue on the right. The building triangle doesn't curve together with the boundary and there is a gap. I fixed it by interpolating every edge in the polygon / linestring in 8 steps and essentially curving them as well.
+
+{% include elements/figure.html image="/assets/images/blog/chrono_isochrone/transformation_with_interpolation.png" caption="Transformation with edge interpolation." %}
+
+You can immediately see the difference between those two approaches.
+
+Below is the full example for the 500 meters distance:
+
+{% include elements/figure.html image="/assets/images/blog/chrono_isochrone/transformation_full_single_iso.png" caption="Transformation for the whole single isochrone." %}
+
+<details>
+    <summary>See the code for transforming the geometries</summary>
+    {%- gist 54c1a0d8de0e3d017c5f763e853780db %}
+</details>
+<span style="margin-bottom: 1rem;"></span>
+
+You can use the code on any boundary you want. You can add support for `MultiLineStrings` and `Points` if you need.
+
+I don't know if it's possible, but maybe those transformations could somehow be exported and used to stretch basemaps images as well? I'm not an expert in rasters and image manipulations, but it could be explored further.
+
+---
+
+The transformation can also be improved by calculating distances in a projected coordinate system (I am doing all calculations here in WGS84, but I decided it's a negligible error for ratios) or even in the street network distance, instead of a straight line to make it more realistic.
+
 ### Multiple isochones at once
 
 {% include elements/figure.html image="/assets/images/blog/chrono_isochrone/isochrones_100_500.png" caption="Geographic and Chronographic isochrones in five bands from 100 to 500 meters." %}
+
+I also wanted to be able to display multiple steps on a single plot. To do that, I have modified the code to calculate multiple isochrone boundaries and clip geometries between them. The transformation code has also been modified to be able to interpolate between two boundaries. Every additional isochrone boundary increases the vector length by 1.
+
+{% include elements/figure.html image="/assets/images/blog/chrono_isochrone/isochrones_500_2000.png" caption="Geographic and Chronographic isochrones in 4 bands from 500 to 2000 meters." %}
+
+If you want to see the code, go to the [final notebook](https://github.com/RaczeQ/isochrone-transform/blob/main/generate_isochrones.ipynb) and explore it there, since it's quite big and similar to the previous snippet (Look for functions `transform_point_between_isochrones`, `transform_coords_between_isochrones` and `transform_geometries_between_isochrones`).
+
+---
+
+I thought it is also interesting to see the difference between transformation from a single isochrone and transformation with steps in-between.
+
+{% include elements/figure.html image="/assets/images/blog/chrono_isochrone/transformation_difference.png" caption="Difference between transformations for a single isochrone and multiple isochrones." %}
+
+You can clearly see the difference in how stretched the building shapes are.
+
+---
+
+At the end I polished the plotting `Matplotlib` code and added the option to colour "bands" using rainbow palette.
+
+{% include elements/figure.html image="/assets/images/blog/chrono_isochrone/rainbow_0_2000.png" caption="Multiple isochrones rainbow-coloured." %}
 
 ## Results {#results}
 
@@ -267,45 +341,34 @@ I also wanted to include most popular crossing in the world - the Shibuya Scramb
 
 #### What I learned
 
-<!-- The main thing I learned during this project was how to write apps with Streamlit.
+For me this was mostly an exploration of street networks and diving deeper into the `OSMnx` library.
 
-The data wrangling part (getting all the building shapes into a common space and finding the proper rotation) was a nice mind-puzzle to figure out, but wasn't as hard to achieve with currently available tools in Python.
+I wasn't aware that truncating by distance clips edges before reaching the required distance. But it makes sense that it doesn't create any new synthetic nodes for this purpose. Maybe it could have a `truncate_by_edge` parameter that would keep the edges beyond the required distance, just like other truncate functions.
 
-For the visualization part, I initially tried to use Matplotlib 3D surface plot functions, but the results weren't satisfactory, so I switched to Plotly.
+The trickiest part was working out how to trace the isochrone boundary that will produce pleasantly looking chronographic isochrones. Boundaries created by convex hull would be the easiest, but they can be very inaccurate. Using very detailed isochrone that traces the streets exactly can create sudden jumps between slight angles that don't look nice after transformation.
 
-As an additional feature, I was thinking about transforming the generated heightmap into an STL file for 3D printing purposes if anyone wishes to do that. I've checked some sources on how to transform heightmaps into 3D objects, but decided not to pursue this path for now.
+Probably the most accurate way to prepare those transformations would be finding out the closest node in the street network and calculating the walking distance from the centre.
 
-In the end, I am satisfied with the visualisations generated, and with the interactive application I deployed on Streamlit. -->
+Unfortunately I wasn't able to find a way to stretch the basemap underneath the chronographic isochrones, maybe someone would like to try and tackle this challenge.
+
+I'm not entirely satisfied with the isochrone creation algorithm that I prepared, but I was able to mitigate the issues I found, while sacrificing some accuracy in the process.
+
+Overall I'm happy with how the plots turned out and was even able to prepare an animation that you can see at the top. I used [`imageio`](https://github.com/imageio/imageio) library for that.
 
 #### Used libraries
 
-<!-- - [OvertureMaestro](https://github.com/kraina-ai/overturemaestro) - for downloading Overture Maps data for a given city and for geocoding the string to a geometry.
-- [GeoPandas](https://github.com/geopandas/geopandas) - for geospatial operations on a dataset of downloaded buildings and I/O.
-- [Shapely](https://github.com/shapely/shapely) - for rotations and translations of a building geometry.
-- [Rasterio](https://github.com/rasterio/rasterio) - for rastering the buildings dataset into a heightmap.
-- [Plotly](https://github.com/plotly/plotly.py) - for displaying 3D surface plot using heightmap data.
-- [NumPy](https://github.com/numpy/numpy) - for 2D array (heightmap) manipulation.
-- [PyArrow](https://github.com/apache/arrow) - for parquet file batch processing.
-- [PyPalettes](https://github.com/JosephBARBIERDARNAL/pypalettes) - for easy access to many palletes.
-- [Matplotlib](https://github.com/matplotlib/matplotlib) - for transforming palettes.
-- [streamlit-folium](https://github.com/randyzwitch/streamlit-folium) - a third party Streamlit component for displaying a Folium map, used for preview geocoded geometry to the user.
-- [Lonboard](https://github.com/developmentseed/lonboard) - for displaying geocoded geometry in the Jupyter Notebook. -->
+- [OSMnx](https://github.com/gboeing/osmnx) - for getting the street networks from OpenStreetMap and manipulating it
+- [NetworkX](https://github.com/networkx/networkx) - for graph operations
+- [QuackOSM](https://github.com/kraina-ai/quackosm) - for downloading building shapes from OpenStreetMap
+- [Shapely](https://github.com/shapely/shapely) - for geometric operations
+- [NumPy](https://github.com/numpy/numpy) - for angular calculations and interpolations
+- [GeoPandas](https://github.com/geopandas/geopandas) - for geospatial operations and plotting
+- [Matplotlib](https://github.com/matplotlib/matplotlib) - for plotting chronographic isochrones and styling the plots
+- [contextily](https://github.com/geopandas/contextily) - for adding basemaps to final plots
+- [tqdm](https://github.com/tqdm/tqdm) - for displaying progress bars
 
 #### Social media mentions
 
-<!-- Streamlit:
+LinkedIn:
 
-- [Deployed app](https://city-summit.streamlit.app/)
-- [Show the Community! discuss post](https://discuss.streamlit.io/t/city-summit-generate-building-data-visualization-for-your-city/88248) -->
-
-<!-- LinkedIn:
-- [First results](https://www.linkedin.com/posts/raczyckikamil_geospatial-geo-overturemaps-activity-7273033425983328256-0U5x?utm_source=share&utm_medium=member_android)
-- [First 3D matplotlib visualization](https://www.linkedin.com/posts/raczyckikamil_opensource-geo-geospatial-activity-7273508171153887232-EtOb?utm_source=share&utm_medium=member_android)
-- [Rotating 3D Plotly animation](https://www.linkedin.com/posts/raczyckikamil_geo-geospatial-urban-activity-7273853844806074368-rfth?utm_source=share&utm_medium=member_android)
-- [Streamlit deploy mention](https://www.linkedin.com/posts/raczyckikamil_overturemaps-geo-geospatial-activity-7275679432143446016-0d57?utm_source=share&utm_medium=member_android)
-- [New features update](https://www.linkedin.com/posts/raczyckikamil_city-summit-generator-activity-7276026160747020288-HmeL?utm_source=share&utm_medium=member_android) -->
-
-<!-- Bluesky:
-- [First results](https://bsky.app/profile/raczeq.bsky.social/post/3ld2of3xrnc2v)
-- [Rotating animation](https://bsky.app/profile/raczeq.bsky.social/post/3ldfwqdrdlk2h)
-- [Streamlit deploy mention](https://bsky.app/profile/raczeq.bsky.social/post/3ldrnj4uk6k2p) -->
+- [First tests with isochrones](https://www.linkedin.com/posts/raczyckikamil_i-have-stumbled-upon-john-nelsons-time-warp-activity-7393626316593467393-tFNW)
