@@ -19,6 +19,12 @@ Later I have also stumbled upon [Katie Walker](https://www.linkedin.com/in/kqwal
 
 There is one problem though - I don't use ArcGIS. Or even QGIS for that matter. I code everything geo 🌍 related in Python (or SQL) and visualize it in Jupyter notebooks, or Kepler.
 
+---
+
+If you want to skip reading about the creation process and see the results, click [here](#results).
+
+You can also run the code locally (or on Google Colab) using [this Jupyter notebook](https://github.com/RaczeQ/isochrone-transform/blob/main/generate_isochrones.ipynb).
+
 ## Thinking process
 
 ---
@@ -44,13 +50,18 @@ I have seen some articles or tutorials on this matter:
 - [Isochrones in Python](https://towardsdatascience.com/isochrones-in-python-fe21814e5cb1/) by [Milan Janosov](https://www.janosov.com/) - also focusing on simple convex hull isochrones.
 - [Relative time map](https://computinggeographically.org/chapters/chap6/fig6-14-sb-drive-time.html) by [David O'Sullivan](https://geospatialstuff.com/) - showing some time-space manipulation inside convex hull-based isochrones.
 - [Street level isochrones](https://geospatialstuff.com/posts/2025-08-20-street-level-isochrones/#isochrones-like-streets-matter) also by David O'Sullivan - this is the first example where I saw concave hull operation being used.
+
+<div class="small_img">
 {% include elements/figure.html image="/assets/images/blog/chrono_isochrone/davidosullivan_street_isochrone.png" caption="Example of the combined street isochrone calculated using concave hull operation. Credit: David O'Sullivan." %}
+</div>
 
 Based on those examples I knew that I would like to avoid using convex hull operation if possible. In my mind, I wanted to achieve isochrones similar to the typical outputs from routing engines like [Valhalla](https://github.com/valhalla/valhalla) (developed by Mapzen).
 
+<div class="small_img">
 {% include elements/figure.html image="/assets/images/blog/chrono_isochrone/mapbox_playground_example.png" caption="Mapbox Isochrones API Playground result (it uses Valhalla under the hood)." %}
+</div>
 
-#### Getting the streets network
+### Getting the streets network
 
 To create any isochrones, I needed to have a street network in the form of a graph. Naturally, I have used the [OSMnx](https://github.com/gboeing/osmnx) library, which was created exactly for this reason.
 
@@ -99,7 +110,9 @@ buildings = qosm.convert_geometry_to_geodataframe(
 # )
 ```
 
+<div class="small_img">
 {% include elements/figure.html image="/assets/images/blog/chrono_isochrone/wro_500_graph.png" caption="Downloaded street graph (orange) and buildings (black outlines) within the 500 meters buffer." %}
+</div>
 
 After acquiring the graph, we can find the closest node to our center point and save it for future calculations.
 
@@ -112,7 +125,7 @@ center_node_id = ox.nearest_nodes(G, X=center_point.x, Y=center_point.y)
 center_node_point = Point(G.nodes[center_node_id]["x"], G.nodes[center_node_id]["y"])
 ```
 
-#### Clipping the network
+### Clipping the network
 
 It should be obvious that there is a difference between reachable walking distance and distance in a straight line without any obstructions. If you could fly, then the circle buffer around the center point would represent the area that you can cover. Howerever we usually walk on predefined paths and we have to clip the graph by the reachable distance.
 
@@ -129,141 +142,21 @@ subgraph = ox.truncate.truncate_graph_dist(
 There is a slight problem however. OSMnx clips graph at nodes, so the distance to most of the end nodes is below required distance (example: the edge start is 496 meters from the center and the edge end is 507 meters from the center - this edge won't be included). I would like to calculate the isochrone with the _exact_ distance, so I wrote some additional code that checks the edges reaching beyond the expected distance and clips them based on the remaining distance.
 
 <details>
-<summary>See the code for extending the edges</summary>
-
-{%- highlight python -%}    
-# this is a code snippet, whole logic with checks is in the final notebook
-subgraph_edges = ox.graph_to_gdfs(subgraph, nodes=False, edges=True)
-
-# find all endpoints and check their edges outside. Clip edges exactly at the distance point.
-edges_to_clip = {}
-for node in set(subgraph.nodes).union([center_node]):
-    # iterate all edges starting from this node
-    for u, v, data in G.edges(node, keys=False, data=True):
-        # if whole edge is inside clipped subgraph - skip it
-        if v in subgraph:
-            continue
-
-        # find a shortest path from the center node to the first node
-        path = ox.shortest_path(subgraph, center_node_id, u, weight="time")
-        # find a total length of a path from the center node
-        length = sum(
-            # notice min here
-            # sometimes there are multiple edges between two nodes
-            # we want to select the shortest one
-            min(
-                edge_data["length"]
-                for edge_data in subgraph.get_edge_data(_u, _v).values()
-            )
-            for _u, _v in pairwise(path)
-        )
-        # calculate missing length
-        length_left = distance_meters - length
-        if length_left > 0:
-            edges_to_clip[(u, v)] = length_left
-
-def subgraph_from_edge_pairs(G: nx.MultiDiGraph, edge_pairs: list[tuple[int, int]]):
-    """
-    Return a MultiDiGraph containing only edges whose endpoints match edge_pairs.
-    - G: original MultiDiGraph (osmnx graph)
-    - edge_pairs: iterable of (u, v) tuples (node ids). Treated as directed by default.
-    """
-    G_out = nx.MultiDiGraph()
-    G_out.graph.update(G.graph)
-    edge_set = set(edge_pairs)
-
-    # add nodes that will be used (copy node attributes)
-    nodes_to_add = set()
-    for u, v in edge_set:
-        if u in G:
-            nodes_to_add.add(u)
-        if v in G:
-            nodes_to_add.add(v)
-    for n in nodes_to_add:
-        G_out.add_node(n, **G.nodes[n])
-
-    # copy matching edges (preserve keys and attributes)
-    for u, v, key, data in G.edges(keys=True, data=True):
-        if (u, v) in edge_set:
-            # ensure nodes exist in G_out (they should from nodes_to_add, but double-check)
-            if not G_out.has_node(u):
-                G_out.add_node(u, **G.nodes[u])
-            if not G_out.has_node(v):
-                G_out.add_node(v, **G.nodes[v])
-            G_out.add_edge(u, v, key=key, **data)
-
-    return G_out
-
-# get geometries of edges to cut
-pruned_edges = ox.graph_to_gdfs(
-    subgraph_from_edge_pairs(graph, list(edges_to_clip.keys())),
-    nodes=False,
-    edges=True,
-)
-
-def cut_linestring(line: LineString, distance: float) -> list[LineString]:
-    """Cut linestring into 2 components based on the normalised distance."""
-    if distance <= 0.0:
-        return [line]
-    elif distance >= 1.0:
-        return [line]
-    coords = list(line.coords)
-    # iterate all coordinates of the linestring
-    for i, p in enumerate(coords):
-        # check where this point lies along the line (0-1)
-        pd = line.project(Point(p), normalized=True)
-        # if point is exactly at required distance - clip the line
-        if pd == distance:
-            return [LineString(coords[: i + 1]), LineString(coords[i:])]
-        # if the point if farther than the required distance
-        # create new point and clip the line
-        if pd > distance:
-            cp = line.interpolate(distance, normalized=True)
-            return [
-                LineString(coords[:i] + [(cp.x, cp.y)]),
-                LineString([(cp.x, cp.y)] + coords[i:]),
-            ]
-
-    raise RuntimeError
-
-clipped_edges_geometries = []
-for (u, v), length_clip in edges_to_clip.items():
-    edge = pruned_edges.loc[(u, v)].iloc[0]
-    edge_length = edge["length"]
-    edge_linestring = edge["geometry"]
-    # find out where to clip the linestring based on its length
-    # and expected length to clip
-    interpolation_ratio = length_clip / edge_length
-    clipped_edge = cut_linestring(edge_linestring, interpolation_ratio)[0]
-    clipped_edges_geometries.append(clipped_edge)
-
-clipped_edges_gdf = gpd.GeoDataFrame(
-    geometry=gpd.GeoSeries(clipped_edges_geometries, crs=4326),
-)
-
-# mark which edges were clipped
-clipped_edges_gdf["clipped"] = True
-subgraph_edges["clipped"] = False
-# concatenate two GeoDataFrames
-all_edges_gdf = gpd.pd.concat(
-    [
-        subgraph_edges[["geometry", "clipped"]],
-        clipped_edges_gdf,
-    ],
-    ignore_index=True,
-)
-{%- endhighlight -%}
+    <summary>See the code for extending the edges</summary>
+    {%- gist 0b08ef50c3a47e433a3874d831c113fa %}
 </details>
 
 {% include elements/figure.html image="/assets/images/blog/chrono_isochrone/graph_clip_edges_extensions.png" caption="Edges extensions after clipping by the reachable distance." %}
 
-#### Finding the boundary
+### Finding the boundary
 
 After preparing the edges with their geometries, it is now time to prepare the boundary that will define the isochrone.
 
 The simplest option is to use the convex hull operation.
 
+<div class="small_img">
 {% include elements/figure.html image="/assets/images/blog/chrono_isochrone/wro_convex_hull.png" caption="Convex hull boundary." %}
+</div>
 
 The obvious problem with this approach is that it captures too big of an area and the boundary if farther than expected distance.
 
@@ -285,20 +178,90 @@ I selected all the end points of the clipped edges, sorted them by the angle and
 {% assign end_points_1_images_urls = "/assets/images/blog/chrono_isochrone/end_points_test_1.png,/assets/images/blog/chrono_isochrone/edge_points_test_1_zoom.png" | split: ',' %}
 {% include posts/figure_multiple_images.html urls=end_points_1_images_urls caption="First test with the edges end points." %}
 
-As you can see there are clearly parts of the graph that are outside the boundary ...
+As you can see there are clearly parts of the graph that are outside the boundary. To fix it, I used the `polygonize` operation on the union of graph edges and the previous boundary.
 
+{% assign end_points_2_images_urls = "/assets/images/blog/chrono_isochrone/end_points_test_2.png,/assets/images/blog/chrono_isochrone/edge_points_test_2_zoom.png" | split: ',' %}
+{% include posts/figure_multiple_images.html urls=end_points_2_images_urls caption="Second test with the edges end points. Blue regions are the result of the polygonize operation, white edge is the old boundary and the edge orange is the new boundary." %}
 
-...
-Now that I write this article, it occured to me that I could have used
+<details>
+    <summary>See the code for finding the boundary</summary>
+    {%- gist 936dce120eca3bc4490ad1a1bcb494f8 %}
+</details>
 
+---
 
-#### Clipping geometries
+I am aware that this approach is also not perfect. Here are the issues that I have encountered:
 
-#### Transforming geometries
+- Sometimes the final boundary becomes a multipolygon - to fix it I just keep the biggest component only.
+- The boundary for the bigger distance sometimes is intersecting with the boundary of the smaller distance - to fix it I union it with the smaller boundary.
 
-#### Multiple isochones at once
+These are quite signifact pitfalls in this approach, but I didn't have more time to try and fix them. If it bothers you and you have some free time to spare, you are welcome to try and fix it 😉
+
+### Clipping geometries
+
+To plot the edges and building geometries, I just clip it with the boundaries geometries from the previous step. It is a quite trivial operation. Edges are already clipped to the required reachable distance.
+
+```python
+# clip the buildings with the boundary geometry and explode MultiPolygons into Polygons
+clipped_buildings = buildings.clip(isochrone_boundary).explode()
+# keep only Polygons for the visualisation
+clipped_buildings = clipped_buildings[clipped_buildings.geom_type == "Polygon"]
+```
+
+<div class="small_img">
+{% include elements/figure.html image="/assets/images/blog/chrono_isochrone/clipped_buildings.png" caption="Buildings clipped by the boundary." %}
+</div>
+
+### Transforming geometries
+
+### Multiple isochones at once
 
 {% include elements/figure.html image="/assets/images/blog/chrono_isochrone/isochrones_100_500.png" caption="Geographic and Chronographic isochrones in five bands from 100 to 500 meters." %}
+
+## Results {#results}
+
+You can generate the same plots for the region of your choice using [this notebook](https://github.com/RaczeQ/isochrone-transform/blob/main/generate_isochrones.ipynb). <br/>
+You can also run it on [Google Colab](https://colab.research.google.com/github/RaczeQ/isochrone-transform/blob/main/generate_isochrones.ipynb).
+
+### London - Big Ben
+
+{% include elements/figure.html image="/assets/images/blog/chrono_isochrone/london_default_chrono.png" caption="Geographic and Chronographic Isochrones for London.<br/>Center point: Big Ben." %}
+
+{% include elements/figure.html image="/assets/images/blog/chrono_isochrone/london_colour_chrono.png" caption="Rainbow coloured Geographic and Chronographic Isochrones for London.<br/>Center point: Big Ben." %}
+
+---
+
+And a more "dense" example with isochrones every 1 minute. Above 10 isochrones, the plotting style is automatically altered and no labels are visible.
+
+{% include elements/figure.html image="/assets/images/blog/chrono_isochrone/london_dense_default_chrono.png" caption="Geographic and Chronographic Isochrones for London.<br/>Center point: Big Ben." %}
+
+{% include elements/figure.html image="/assets/images/blog/chrono_isochrone/london_dense_colour_chrono.png" caption="Rainbow coloured Geographic and Chronographic Isochrones for London.<br/>Center point: Big Ben." %}
+
+### New York - Times Square
+
+Notice how the isochrones are more diamond-shaped vs London. That's what you get from the rectangular city blocks.
+
+{% include elements/figure.html image="/assets/images/blog/chrono_isochrone/nyc_default_chrono.png" caption="Geographic and Chronographic Isochrones for New York City.<br/>Center point: Times Square." %}
+
+{% include elements/figure.html image="/assets/images/blog/chrono_isochrone/nyc_colour_chrono.png" caption="Rainbow coloured Geographic and Chronographic Isochrones for New York City.<br/>Center point: Times Square." %}
+
+### Paris - Arc de Triomphe
+
+I was interested in how the roads spread out from this iconic roundabout. Unfortunately, there is no street edge / node exactly in the center of the Charles de Gaulle Square available in the street network, so the center is slightly shifted.
+
+You can also see how circular the isochrones are.
+
+{% include elements/figure.html image="/assets/images/blog/chrono_isochrone/paris_default_chrono.png" caption="Geographic and Chronographic Isochrones for Paris.<br/>Center point: Arc de Triomphe." %}
+
+{% include elements/figure.html image="/assets/images/blog/chrono_isochrone/paris_colour_chrono.png" caption="Rainbow coloured Geographic and Chronographic Isochrones for Paris.<br/>Center point: Arc de Triomphe." %}
+
+### Tokyo - Shibuya crossing
+
+I also wanted to include most popular crossing in the world - the Shibuya Scramble Crossing, located in Tokyo, near Shibuya Station.
+
+{% include elements/figure.html image="/assets/images/blog/chrono_isochrone/shibuya_default_chrono.png" caption="Geographic and Chronographic Isochrones for Shibuya, Tokyo.<br/>Center point: Shibuya crossing." %}
+
+{% include elements/figure.html image="/assets/images/blog/chrono_isochrone/shibuya_colour_chrono.png" caption="Rainbow coloured Geographic and Chronographic Isochrones for Shibuya, Tokyo.<br/>Center point: Shibuya crossing." %}
 
 ## Summary
 
