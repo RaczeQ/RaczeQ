@@ -1,0 +1,1639 @@
+---
+layout: null
+permalink: /osmviewer/
+---
+
+<!-- <link rel="shortcut icon" type="image/x-icon" href="/assets/favicon.ico"> -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OSM Geometry Viewer</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+<link rel="shortcut icon" type="image/x-icon" href="/assets/favicon.ico">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; }
+
+  #toolbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; background: #2c3e50; color: #fff;
+    flex-shrink: 0; flex-wrap: wrap;
+  }
+  #toolbar label { font-size: 13px; font-weight: 600; }
+  #toolbar select, #toolbar input, #toolbar button {
+    padding: 6px 10px; border: 1px solid #4a6274; border-radius: 4px;
+    font-size: 14px; background: #fff; color: #333;
+  }
+  #toolbar input { width: 180px; }
+  #toolbar button {
+    background: #3498db; color: #fff; border: none; cursor: pointer; font-weight: 600;
+  }
+  #toolbar button:hover { background: #2980b9; }
+  #toolbar .title { font-size: 15px; font-weight: 700; margin-right: 12px; }
+
+  #main { display: flex; flex: 1; min-height: 0; }
+
+  #map { flex: 1; min-width: 0; }
+
+  #panel {
+    width: 380px; flex-shrink: 0; display: flex; flex-direction: column;
+    border-left: 1px solid #ddd; background: #fafafa; overflow: hidden;
+  }
+  #panel-header {
+    padding: 10px 12px; background: #ecf0f1; border-bottom: 1px solid #ddd;
+    font-size: 13px; font-weight: 600; color: #555;
+  }
+  #feature-list {
+    max-height: 200px; overflow-y: auto; border-bottom: 1px solid #ddd;
+  }
+  .feature-item {
+    padding: 7px 12px; cursor: pointer; border-bottom: 1px solid #eee;
+    font-size: 13px;
+  }
+  .feature-item:hover, .feature-item.map-hover { background: #e8f4fd; }
+  .feature-item.active { background: #d4edfc; border-left: 3px solid #3498db; }
+  .feature-item-line1 {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .type-badge {
+    font-size: 11px; padding: 3px 8px; border-radius: 10px;
+    font-weight: 600; flex-shrink: 0; border: 1.5px solid transparent;
+    text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .type-badge.node { background: #fde8e8; color: #c0392b; border-color: #e74c3c; }
+  .type-badge.way { background: #e8f8e8; color: #1e8449; border-color: #2ecc71; }
+  .type-badge.relation { background: #f0e6f6; color: #7d3c98; border-color: #9b59b6; }
+  .feature-item .category { color: #666; font-size: 12px; font-weight: 600; flex-shrink: 0; white-space: nowrap; }
+  .feature-item .feat-id { color: #999; font-size: 11px; margin-left: auto; flex-shrink: 0; }
+  .feature-item-name {
+    margin-top: 2px; padding-left: 2px;
+    font-size: 12px; color: #555;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .feature-item-name-en {
+    padding-left: 2px; font-size: 11px; color: #999;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .geom-type-line {
+    display: flex; align-items: center; gap: 4px; margin-top: 2px; padding-left: 1px;
+    font-size: 10px; color: #aaa; letter-spacing: 0.2px; text-transform: uppercase; font-weight: 500;
+  }
+  .geom-type-line svg { flex-shrink: 0; }
+  .feature-header-name-en { color: #888; font-weight: 400; font-size: 13px; word-break: break-word; }
+  .bbox-flag {
+    font-size: 9px; padding: 1px 5px; border-radius: 3px;
+    background: #ffeaa7; color: #856404; border: 1px solid #f0d78e;
+    flex-shrink: 0; text-transform: uppercase; font-weight: 600; letter-spacing: 0.3px;
+  }
+
+  #geometry-output { flex: 1; overflow-y: auto; padding: 10px 12px; }
+  .output-section { margin-bottom: 14px; }
+  .output-section .section-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;
+  }
+  .output-section label { font-size: 12px; font-weight: 700; color: #555; text-transform: uppercase; }
+  .copy-btn {
+    font-size: 11px; padding: 3px 8px; border: 1px solid #bbb; border-radius: 3px;
+    background: #fff; cursor: pointer; color: #555;
+  }
+  .copy-btn:hover { background: #eee; }
+  .copy-btn.copied { background: #2ecc71; color: #fff; border-color: #2ecc71; }
+  .output-section textarea {
+    width: 100%; min-height: 120px; font-family: 'SF Mono', 'Consolas', monospace;
+    font-size: 12px; padding: 8px; border: 1px solid #ccc; border-radius: 4px;
+    resize: vertical; background: #fff;
+  }
+  .bbox-value {
+    width: 100%; font-family: 'SF Mono', 'Consolas', monospace;
+    font-size: 12px; padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px;
+    background: #fff; color: #333;
+  }
+
+  /* Collapsible tags */
+  .tags-collapsible summary {
+    cursor: pointer; user-select: none; list-style: none;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tags-collapsible summary::-webkit-details-marker { display: none; }
+  .tags-collapsible summary::before {
+    content: '\25B6'; font-size: 10px; color: #888; transition: transform 0.15s;
+  }
+  .tags-collapsible[open] summary::before { transform: rotate(90deg); }
+  .tags-collapsible summary label { cursor: pointer; pointer-events: none; }
+  .tag-count { font-size: 11px; font-weight: 400; color: #999; }
+
+  /* Object stats */
+  .stats-info {
+    font-size: 13px; color: #555; margin-top: 4px;
+    font-family: 'SF Mono', 'Consolas', monospace;
+  }
+  .members-tree { margin-top: 6px; }
+  .members-tree summary {
+    cursor: pointer; font-size: 12px; color: #555; font-weight: 600; user-select: none;
+  }
+  .members-tree summary:hover { color: #333; }
+  .members-tree-content {
+    font-family: 'SF Mono', 'Consolas', monospace; font-size: 11px; line-height: 1.6;
+    color: #555; margin: 4px 0 0 0; padding: 6px 8px;
+    background: #f5f5f5; border: 1px solid #e0e0e0; border-radius: 4px;
+    overflow-x: auto; white-space: pre;
+  }
+
+  #status {
+    padding: 8px 12px; font-size: 12px; color: #777;
+    border-top: 1px solid #ddd; background: #ecf0f1; flex-shrink: 0;
+  }
+  #status.loading { color: #e67e22; }
+  #status.error { color: #e74c3c; }
+  #status.success { color: #27ae60; }
+
+  .tags-table { font-size: 12px; width: 100%; border-collapse: collapse; margin-top: 8px; }
+  .tags-table td { padding: 3px 6px; border: 1px solid #ddd; vertical-align: top; }
+  .tags-table td:first-child { font-weight: 600; color: #555; white-space: nowrap; width: 1%; }
+  .tags-table td:last-child { word-break: break-all; }
+
+  .feature-header {
+    padding: 10px 0 10px 0; margin-bottom: 8px; border-bottom: 1px solid #ddd;
+    color: #333;
+  }
+  .feature-header-line1 {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px; font-weight: 700;
+  }
+  .feature-header-line1 .type-badge {
+    font-size: 13px; padding: 4px 12px; border-radius: 12px; border-width: 2px;
+  }
+  .feature-header-line1 .feat-id { color: #666; font-weight: 400; font-size: 13px; }
+  .feature-header-name {
+    font-size: 15px; font-weight: 700; margin-top: 4px;
+    word-break: break-word;
+  }
+
+  .query-buffer {
+    animation: marching-ants 0.6s linear infinite;
+    stroke-dasharray: 12, 8 !important;
+  }
+  .query-buffer-static {
+    stroke-dasharray: 6, 4 !important;
+    animation: none !important;
+    opacity: 0.4;
+  }
+  @keyframes marching-ants {
+    to { stroke-dashoffset: -20; }
+  }
+  .query-spinner {
+    position: absolute; z-index: 600; pointer-events: none;
+    width: 24px; height: 24px; margin: -12px 0 0 -12px;
+    border: 3px solid var(--spinner-bg, rgba(231,76,60,0.25));
+    border-top-color: var(--spinner-fg, #e74c3c);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  #filter-bar {
+    display: flex; gap: 4px; padding: 8px 10px; border-bottom: 1px solid #ddd;
+    background: #f5f6f7; flex-wrap: wrap; align-items: center;
+  }
+  .filter-tab {
+    display: flex; align-items: center; gap: 5px;
+    padding: 5px 12px; border-radius: 0; font-size: 12px; font-weight: 600;
+    cursor: pointer; border: none; border-bottom: 2px solid transparent;
+    user-select: none; transition: all 0.15s;
+    text-transform: uppercase; letter-spacing: 0.3px;
+    background: transparent; color: #999;
+  }
+  .filter-tab:hover:not(.disabled) { color: #555; }
+  .filter-tab.disabled { opacity: 0.35; cursor: default; pointer-events: none; }
+  .filter-tab.active.node { color: #c0392b; border-bottom-color: #e74c3c; }
+  .filter-tab.active.way { color: #1e8449; border-bottom-color: #2ecc71; }
+  .filter-tab.active.relation { color: #7d3c98; border-bottom-color: #9b59b6; }
+  .filter-tab .chip-count {
+    background: rgba(0,0,0,0.08); border-radius: 8px; padding: 1px 6px; font-size: 11px;
+  }
+  .hide-unnamed-toggle {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 11px; color: #666; cursor: pointer;
+    margin-left: auto; user-select: none; white-space: nowrap;
+  }
+  .hide-unnamed-toggle input { cursor: pointer; margin: 0; }
+
+  .type-group-header { display: none; }
+
+  .empty-state {
+    padding: 30px 20px; text-align: center; color: #aaa; font-size: 13px; line-height: 1.5;
+  }
+  .error-state {
+    padding: 30px 20px; text-align: center; color: #c0392b; font-size: 14px; font-weight: 600; line-height: 1.5;
+  }
+  .loading-state {
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    padding: 30px 20px; color: #888; font-size: 13px;
+  }
+  .loading-state .panel-spinner {
+    width: 28px; height: 28px;
+    border: 3px solid rgba(52,152,219,0.2);
+    border-top-color: #3498db;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  #context-menu {
+    display: none; position: fixed; z-index: 10000;
+    background: #fff; border: 1px solid #ccc; border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2); padding: 4px 0; min-width: 180px;
+  }
+  #context-menu .ctx-item {
+    padding: 8px 14px; cursor: pointer; font-size: 13px; color: #333;
+  }
+  #context-menu .ctx-item:hover { background: #e8f4fd; }
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <span class="title">OSM Geometry Viewer</span>
+  <label for="osm-type">Type:</label>
+  <select id="osm-type">
+    <option value="way">way</option>
+    <option value="node">node</option>
+    <option value="relation">relation</option>
+  </select>
+  <label for="osm-id">ID:</label>
+  <input id="osm-id" type="text" placeholder="e.g. 27741616" />
+  <button id="fetch-btn" onclick="handleFetch()">Fetch</button>
+  <span style="margin-left:auto; display:flex; align-items:center; gap:6px;">
+    <label for="basemap-style" style="font-size:12px; opacity:0.7;">Style:</label>
+    <select id="basemap-style" style="padding:3px 6px; border-radius:4px; border:1px solid rgba(255,255,255,0.3); background:#34495e; color:#fff; font-size:12px; cursor:pointer;">
+      <option value="colorful">Colorful</option>
+      <option value="graybeard">Graybeard</option>
+      <option value="neutrino">Neutrino</option>
+      <option value="eclipse">Eclipse</option>
+      <option value="shadow">Shadow</option>
+      <option value="satellite">Satellite</option>
+    </select>
+  </span>
+</div>
+
+<div id="context-menu">
+  <div class="ctx-item" id="ctx-query">Query features here</div>
+</div>
+
+<div id="main">
+  <div id="map"></div>
+  <div id="panel">
+    <div id="panel-header">Results</div>
+    <div id="filter-bar" style="display:none"></div>
+    <div id="feature-list"></div>
+    <div id="geometry-output">
+      <div class="empty-state">
+        Right-click the map to query features,<br>or enter an OSM type + ID above.
+      </div>
+    </div>
+    <div id="status">Ready</div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js"></script>
+<script src="https://unpkg.com/osmtogeojson@3.0.0-beta.5/osmtogeojson.js"></script>
+<script src="https://unpkg.com/@terraformer/wkt@2.1.2/dist/t-wkt.umd.js"></script>
+<script>
+const OVERPASS_ENDPOINTS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+];
+let geojsonLayer = null;
+let markerLayer = null;
+let hoverLayer = null;
+let queryBufferLayer = null;
+let allOutlinesLayer = null;
+const geometryCache = new Map(); // key: "type/id" → GeoJSON feature
+let hideUnnamed = true;
+
+// --- Random popular city for default view ---
+const POPULAR_CITIES = [
+  [35.6762,139.6503],[28.6139,77.2090],[30.0444,31.2357],[55.7558,37.6173],
+  [39.9042,116.4074],[-6.2088,106.8456],[23.8103,90.4125],[-23.5505,-46.6333],
+  [14.5995,120.9842],[33.6844,51.3869],[3.1390,101.6869],[13.7563,100.5018],
+  [6.5244,3.3792],[-4.4419,15.2663],[37.5665,126.9780],[23.6978,120.9605],
+  [52.2297,21.0122],[40.4168,-3.7038],[48.8566,2.3522],[41.0082,28.9784],
+  [51.5074,-0.1278],[6.9271,79.8612],[38.9072,-77.0369],[19.4326,-99.1332],
+  [4.7110,-74.0721],[12.3714,1.5197],[-1.2921,36.8219],[15.3229,44.2066],
+  [9.0579,7.4951],[-12.0464,-77.0428],[1.3521,103.8198],[18.5204,73.8567],
+  [21.0278,105.8342],[33.8938,35.5018],[13.0827,80.2707],[47.4979,19.0402],
+  [34.0522,-118.2437],[35.6892,51.3890],[-15.7975,-47.8919],[-34.6037,-58.3816],
+  [36.8065,10.1815],[12.6392,-8.0029],[31.9454,35.9284],[59.9139,10.7522],
+  [45.4215,-75.6972],[52.5200,13.4050],[50.4501,30.5234],[41.7151,44.8271],
+  [46.0569,14.5058],[-33.9249,18.4241]
+];
+const _defaultCity = POPULAR_CITIES[Math.floor(Math.random() * POPULAR_CITIES.length)];
+
+// --- Map setup ---
+const map = L.map('map').setView(_defaultCity, 13);
+
+// --- Custom context menu ---
+const ctxMenu = document.getElementById('context-menu');
+let ctxLatlng = null;
+
+map.on('contextmenu', (e) => {
+  e.originalEvent.preventDefault();
+  ctxLatlng = e.latlng;
+  ctxMenu.style.display = 'block';
+  ctxMenu.style.left = e.originalEvent.clientX + 'px';
+  ctxMenu.style.top = e.originalEvent.clientY + 'px';
+});
+
+document.getElementById('ctx-query').addEventListener('click', () => {
+  ctxMenu.style.display = 'none';
+  if (ctxLatlng) queryFeaturesAtPoint(ctxLatlng.lat, ctxLatlng.lng);
+});
+
+document.addEventListener('click', () => { ctxMenu.style.display = 'none'; });
+document.addEventListener('contextmenu', (e) => {
+  if (!e.target.closest('#map')) ctxMenu.style.display = 'none';
+});
+
+// --- VersaTiles basemap ---
+const VERSATILES_STYLES = {
+  colorful:  'https://tiles.versatiles.org/assets/styles/colorful/style.json',
+  graybeard: 'https://tiles.versatiles.org/assets/styles/graybeard/style.json',
+  neutrino:  'https://tiles.versatiles.org/assets/styles/neutrino/style.json',
+  eclipse:   'https://tiles.versatiles.org/assets/styles/eclipse/style.json',
+  shadow:    'https://tiles.versatiles.org/assets/styles/shadow/style.json',
+  satellite: 'https://tiles.versatiles.org/assets/styles/satellite/style.json'
+};
+const DARK_BASEMAPS = new Set(['eclipse', 'shadow', 'satellite']);
+let isDarkBasemap = false;
+
+// Theme-aware geometry colors
+function tc() {
+  if (isDarkBasemap) return {
+    outline: '#e0e0e0', outlineOp: 0.8, outlineWeight: 2,
+    outlineBbox: '#bdbdbd', outlineBboxOp: 0.6,
+    hover: '#ffd54f', hoverWeight: 4,
+    selected: '#4fc3f7', selectedWeight: 4, selectedFill: 0.2,
+    point: '#ff7043', pointFill: 0.9, pointStroke: '#fff', pointStrokeWeight: 2,
+    queryBuffer: '#ff5252',
+    bboxHover: '#ffd54f'
+  };
+  return {
+    outline: '#7f8c8d', outlineOp: 0.5, outlineWeight: 1.5,
+    outlineBbox: '#7f8c8d', outlineBboxOp: 0.35,
+    hover: '#e67e22', hoverWeight: 3,
+    selected: '#2196f3', selectedWeight: 3, selectedFill: 0.15,
+    point: '#e74c3c', pointFill: 0.7, pointStroke: '#fff', pointStrokeWeight: 1,
+    queryBuffer: '#e74c3c',
+    bboxHover: '#e67e22'
+  };
+}
+
+function updateThemeCSSVars() {
+  const t = tc();
+  document.documentElement.style.setProperty('--spinner-fg', t.queryBuffer);
+  document.documentElement.style.setProperty('--spinner-bg', t.queryBuffer + '40');
+}
+
+let basemapLayer = L.maplibreGL({
+  style: VERSATILES_STYLES['colorful'],
+  attribution: '&copy; <a href="https://versatiles.org/">VersaTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  pane: 'tilePane'
+}).addTo(map);
+
+// Track last state for re-rendering on theme change
+let _lastOutlineArgs = null;  // { elements, featureMap }
+let _lastSelectedFeature = null; // { feature, rawTags, osmType, osmId, rawMembers }
+let _attachOutlineInteraction = null; // set by showFeatureList, called after showAllOutlines
+
+document.getElementById('basemap-style').addEventListener('change', function() {
+  const styleUrl = VERSATILES_STYLES[this.value];
+  if (!styleUrl) return;
+  isDarkBasemap = DARK_BASEMAPS.has(this.value);
+  updateThemeCSSVars();
+  map.removeLayer(basemapLayer);
+  basemapLayer = L.maplibreGL({
+    style: styleUrl,
+    attribution: '&copy; <a href="https://versatiles.org/">VersaTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    pane: 'tilePane'
+  }).addTo(map);
+  // Re-render outlines with new theme colors
+  if (_lastOutlineArgs) {
+    showAllOutlines(_lastOutlineArgs.elements, _lastOutlineArgs.featureMap);
+    if (_attachOutlineInteraction) _attachOutlineInteraction();
+  }
+  // Re-render selected geometry with new theme colors
+  if (_lastSelectedFeature) {
+    const s = _lastSelectedFeature;
+    if (geojsonLayer) { map.removeLayer(geojsonLayer); geojsonLayer = null; }
+    const t = tc();
+    const rf = [s.feature, ...wayFeaturesFromMembers(s.rawMembers)];
+    geojsonLayer = L.geoJSON({ type: 'FeatureCollection', features: rf }, {
+      style: { color: t.selected, weight: t.selectedWeight, fillColor: t.selected, fillOpacity: t.selectedFill },
+      pointToLayer: (f, latlng) => L.circleMarker(latlng, {
+        radius: 8, color: t.pointStroke, weight: t.pointStrokeWeight,
+        fillColor: t.point, fillOpacity: t.pointFill
+      })
+    }).addTo(map);
+  }
+});
+
+// --- Status ---
+function setStatus(msg, type = '') {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = type;
+}
+
+// --- Overpass fetch with fallback ---
+async function overpassQuery(query) {
+  let lastErr;
+  for (const url of OVERPASS_ENDPOINTS) {
+    try {
+      const resp = await fetch(url, {
+        method: 'POST',
+        body: 'data=' + encodeURIComponent(query),
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      });
+      if (resp.status === 429 || resp.status === 403 || resp.status >= 500) {
+        lastErr = new Error(`${url}: ${resp.status} ${resp.statusText}`);
+        continue; // try next endpoint
+      }
+      if (!resp.ok) throw new Error(`Overpass error: ${resp.status} ${resp.statusText}`);
+      return resp.json();
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw new Error('All Overpass servers failed. ' + (lastErr ? lastErr.message : 'Please try again later.'));
+}
+
+// --- OSM API v0.6 fallback for individual feature geometry ---
+async function fetchFromOsmApi(type, id) {
+  const base = 'https://api.openstreetmap.org/api/0.6';
+  // Nodes don't support /full endpoint
+  const url = type === 'node'
+    ? `${base}/node/${id}.json`
+    : `${base}/${type}/${id}/full.json`;
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`OSM API: ${resp.status} ${resp.statusText}`);
+  return resp.json();
+}
+
+// --- Helpers: enrich OSM API relation members with geometry from /full.json sibling elements ---
+// OSM API members only have {type, ref, role}; this adds inline geometry like Overpass `out geom`.
+function enrichMembersFromFull(relationEl, allElements) {
+  if (!relationEl || !Array.isArray(relationEl.members) || !Array.isArray(allElements)) return;
+  // Build lookup: "type/id" → element
+  const elMap = new Map();
+  for (const el of allElements) elMap.set(`${el.type}/${el.id}`, el);
+  for (const m of relationEl.members) {
+    const el = elMap.get(`${m.type}/${m.ref}`);
+    if (!el) continue;
+    if (m.type === 'node' && el.lat != null) {
+      m.lat = el.lat;
+      m.lon = el.lon;
+    } else if (m.type === 'way' && Array.isArray(el.nodes)) {
+      m.geometry = el.nodes.map(nid => {
+        const n = elMap.get(`node/${nid}`);
+        return n ? { lat: n.lat, lon: n.lon } : null;
+      });
+    }
+  }
+}
+
+// --- Helpers: preserve raw Overpass members before osmtogeojson mutation ---
+function preserveRawMembers(elements) {
+  for (const el of (elements || [])) {
+    if (el.members) el._rawMembers = JSON.parse(JSON.stringify(el.members));
+  }
+}
+function wayFeaturesFromMembers(rawMembers) {
+  if (!Array.isArray(rawMembers)) return [];
+  const out = [];
+  for (const m of rawMembers) {
+    if (m.type === 'way' && Array.isArray(m.geometry) && m.geometry.length >= 2) {
+      // Skip ways with incomplete geometry (null entries = unresolved nodes from bbox clipping)
+      if (m.geometry.some(p => p == null)) continue;
+      out.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: m.geometry.map(p => [p.lon, p.lat]) }, properties: {} });
+    }
+  }
+  return out;
+}
+
+// --- Fetch by ID ---
+async function fetchByOsmId(type, id) {
+  setStatus(`Fetching ${type}/${id}...`, 'loading');
+  clearResults();
+  try {
+    // OSM API v0.6 first (always has full/latest data)
+    const data = await fetchFromOsmApi(type, id);
+    const mainEl = data.elements?.find(e => e.type === type && String(e.id) === String(id));
+    setStatus(`Processing geometry for ${type}/${id}...`, 'loading');
+    // Enrich relation members with geometry from sibling elements in /full.json
+    // (OSM API members have {type,ref,role} only — no inline geometry like Overpass)
+    enrichMembersFromFull(mainEl, data.elements);
+    preserveRawMembers(data.elements);
+    const geojson = osmtogeojson(data);
+    const merged = mergeFeatures(geojson, type, id);
+    if (!merged) {
+      showError(`Could not convert ${type}/${id} to geometry`);
+      return;
+    }
+    displayGeometry(merged, mainEl?.tags, type, id, mainEl?._rawMembers);
+    history.replaceState(null, '', `#${type}/${id}`);
+    setStatus(`Loaded ${type}/${id}`, 'success');
+  } catch (apiErr) {
+    // If OSM API returned 404/410, the object doesn't exist — skip Overpass
+    if (/40[04]|410|Gone/.test(apiErr.message)) {
+      showError(`${type}/${id} not found — check the type and ID`);
+      return;
+    }
+    // Fallback: Overpass API
+    try {
+      setStatus(`OSM API failed, trying Overpass for ${type}/${id}...`, 'loading');
+      const query = `[out:json][timeout:25];${type}(${id});out geom;`;
+      const data = await overpassQuery(query);
+      if (!data.elements || data.elements.length === 0) {
+        showError(`${type}/${id} not found — check the type and ID`);
+        return;
+      }
+      setStatus(`Processing geometry for ${type}/${id}...`, 'loading');
+      preserveRawMembers(data.elements);
+      const geojson = osmtogeojson(data);
+      const merged = mergeFeatures(geojson, type, id);
+      if (!merged) {
+        showError(`Could not convert ${type}/${id} to geometry`);
+        return;
+      }
+      displayGeometry(merged, data.elements[0]?.tags, type, id, data.elements[0]?._rawMembers);
+      history.replaceState(null, '', `#${type}/${id}`);
+      setStatus(`Loaded ${type}/${id} (via Overpass)`, 'success');
+    } catch (overpassErr) {
+      showError(`All sources failed: ${apiErr.message}`);
+    }
+  }
+}
+
+// --- Query features at point (two queries like OSM) ---
+async function queryFeaturesAtPoint(lat, lng) {
+  setStatus(`Querying features near ${lat.toFixed(5)}, ${lng.toFixed(5)}...`, 'loading');
+  clearResults();
+  clearMap();
+
+  // Radius: ground distance for ~45px at current zoom, capped at 100m
+  const point = map.latLngToContainerPoint([lat, lng]);
+  const nearby = map.containerPointToLatLng([point.x + 45, point.y]);
+  const radius = Math.min(100, map.distance(L.latLng(lat, lng), nearby)).toFixed(2);
+
+  // Show animated query buffer circle (exact meters) and zoom to it
+  const qbt = tc();
+  queryBufferLayer = L.circle([lat, lng], {
+    radius: parseFloat(radius),
+    color: qbt.queryBuffer, weight: isDarkBasemap ? 3 : 2, fillOpacity: isDarkBasemap ? 0.1 : 0.06, className: 'query-buffer'
+  }).addTo(map);
+  markerLayer = L.marker([lat, lng], {
+    icon: L.divIcon({ className: '', html: '<div class="query-spinner"></div>', iconSize: [0, 0] }),
+    interactive: false
+  }).addTo(map);
+  map.fitBounds(queryBufferLayer.getBounds().pad(0.3));
+
+  // Bbox from map view AFTER zoom for geom clipping
+  await new Promise(r => map.once('moveend', r));
+  const b = map.getBounds();
+  const bbox = `${b.getSouth().toFixed(5)},${b.getWest().toFixed(5)},${b.getNorth().toFixed(5)},${b.getEast().toFixed(5)}`;
+
+  try {
+    // Query 1: nearby nodes/ways + relations with geom
+    const q1 = `[timeout:10][out:json];(node(around:${radius},${lat},${lng});way(around:${radius},${lat},${lng}););out tags geom(${bbox});relation(around:${radius},${lat},${lng});out geom(${bbox});`;
+    // Query 2: enclosing features (is_in)
+    const q2 = `[timeout:10][out:json];is_in(${lat},${lng})->.a;way(pivot.a);out tags bb;out ids geom(${bbox});relation(pivot.a);out tags bb;`;
+
+    const [data1, data2] = await Promise.all([
+      overpassQuery(q1),
+      overpassQuery(q2)
+    ]);
+
+    // Merge elements, deduplicate by type+id
+    const seen = new Set();
+    const allElements = [];
+    for (const el of [...(data1.elements || []), ...(data2.elements || [])]) {
+      const key = `${el.type}/${el.id}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        allElements.push(el);
+      }
+    }
+
+    // Keep tagged elements + all nodes (tagless nodes without coords are harmless — they just show as items)
+    const filtered = allElements.filter(el => {
+      if (el.tags && Object.keys(el.tags).length > 0) return true;
+      return el.type === 'node';
+    });
+    if (filtered.length === 0) {
+      setStatus('No features found at this location', 'error');
+      return;
+    }
+
+    // Preserve raw members before osmtogeojson mutates them
+    preserveRawMembers(allElements);
+
+    // Convert merged data to GeoJSON for hover preview
+    setStatus(`Processing ${filtered.length} features...`, 'loading');
+    const merged = { elements: allElements };
+    const geojson = osmtogeojson(merged);
+    const featureMap = new Map();
+    for (const f of geojson.features) {
+      if (f.id) featureMap.set(f.id, f);
+    }
+    // Ensure filtered nodes have a GeoJSON feature (osmtogeojson may drop tagless way-vertex nodes)
+    for (const el of filtered) {
+      if (el.type === 'node' && el.lat != null && el.lon != null && !featureMap.has(`node/${el.id}`)) {
+        featureMap.set(`node/${el.id}`, {
+          type: 'Feature', id: `node/${el.id}`,
+          geometry: { type: 'Point', coordinates: [el.lon, el.lat] },
+          properties: { ...(el.tags || {}) }
+        });
+      }
+    }
+    // For relations that osmtogeojson split into member-way features,
+    // merge matching way features back into a single relation feature
+    for (const el of filtered) {
+      if (el.type !== 'relation') continue;
+      const key = `relation/${el.id}`;
+      if (featureMap.has(key)) continue;
+      const rawM = el._rawMembers || el.members;
+      if (!rawM) continue;
+      const memberKeys = new Set(rawM.filter(m => m.type && m.ref).map(m => `${m.type}/${m.ref}`));
+      const memberFeatures = geojson.features.filter(f => f.id && memberKeys.has(f.id));
+      if (memberFeatures.length > 0) {
+        const m = mergeFeatures({ features: memberFeatures }, el.type, el.id);
+        if (m) featureMap.set(key, m);
+      }
+    }
+    showFeatureList(filtered, featureMap, lat, lng);
+    // Remove spinner
+    if (markerLayer) { map.removeLayer(markerLayer); markerLayer = null; }
+    // Keep buffer but make it static
+    if (queryBufferLayer) {
+      const el = queryBufferLayer.getElement();
+      if (el) { el.classList.remove('query-buffer'); el.classList.add('query-buffer-static'); }
+    }
+    // Show all feature outlines on the map (respect hide-unnamed filter)
+    const outlineElements = hideUnnamed ? filtered.filter(el => el.tags && el.tags.name) : filtered;
+    showAllOutlines(outlineElements, featureMap);
+    if (_attachOutlineInteraction) _attachOutlineInteraction();
+    setStatus(`Found ${filtered.length} feature(s)`, 'success');
+  } catch (err) {
+    if (queryBufferLayer) { map.removeLayer(queryBufferLayer); queryBufferLayer = null; }
+    if (markerLayer) { map.removeLayer(markerLayer); markerLayer = null; }
+    setStatus(err.message, 'error');
+  }
+}
+
+// --- Check if raw Overpass element has real (complete) geometry ---
+function hasRealGeometry(feature, el) {
+  if (!feature || !feature.geometry) return false;
+  // A node is always a Point — that's real geometry (lat/lon IS the geometry)
+  if (el.type === 'node') return true;
+  // For ways: geometry array must exist, be non-empty, and have NO nulls (bbox clipping produces nulls)
+  if (el.type === 'way') {
+    return Array.isArray(el.geometry) && el.geometry.length > 0 &&
+           !el.geometry.some(p => p === null);
+  }
+  // For relations: use _rawMembers (preserved before osmtogeojson mutation) if available
+  if (el.type === 'relation') {
+    const members = el._rawMembers || el.members;
+    if (!Array.isArray(members) || members.length === 0) return false;
+    const hasAnyGeom = members.some(m => m.geometry || m.lat !== undefined);
+    const hasNulls = members.some(m => Array.isArray(m.geometry) && m.geometry.some(p => p === null));
+    return hasAnyGeom && !hasNulls;
+  }
+  return false;
+}
+
+// --- Merge multiple osmtogeojson features into a single feature ---
+// osmtogeojson splits route relations into separate way features;
+// this merges them back into one feature with a combined geometry.
+// Stores original member features in ._memberFeatures for per-member tag output.
+function mergeFeatures(geojson, type, id) {
+  const features = geojson.features || [];
+  if (features.length === 0) return null;
+  if (features.length === 1) return features[0];
+
+  // Collect all geometries, flatten Multi* types into components
+  const parts = [];
+  for (const f of features) {
+    if (!f.geometry) continue;
+    const g = f.geometry;
+    if (g.type === 'MultiLineString') {
+      g.coordinates.forEach(c => parts.push({ type: 'LineString', coords: c }));
+    } else if (g.type === 'MultiPolygon') {
+      g.coordinates.forEach(c => parts.push({ type: 'Polygon', coords: c }));
+    } else if (g.type === 'MultiPoint') {
+      g.coordinates.forEach(c => parts.push({ type: 'Point', coords: c }));
+    } else if (g.type === 'GeometryCollection') {
+      g.geometries.forEach(sub => parts.push({ type: sub.type, coords: sub.coordinates }));
+    } else {
+      parts.push({ type: g.type, coords: g.coordinates });
+    }
+  }
+
+  // Group by geometry type
+  const byType = {};
+  for (const p of parts) { (byType[p.type] = byType[p.type] || []).push(p.coords); }
+  const typeKeys = Object.keys(byType);
+
+  let mergedGeometry;
+  if (typeKeys.length === 1) {
+    const gType = typeKeys[0];
+    if (gType === 'LineString')      mergedGeometry = { type: 'MultiLineString', coordinates: byType[gType] };
+    else if (gType === 'Polygon')    mergedGeometry = { type: 'MultiPolygon', coordinates: byType[gType] };
+    else if (gType === 'Point')      mergedGeometry = { type: 'MultiPoint', coordinates: byType[gType] };
+    else mergedGeometry = { type: 'GeometryCollection', geometries: parts.map(p => ({ type: p.type, coordinates: p.coords })) };
+  } else {
+    mergedGeometry = { type: 'GeometryCollection', geometries: parts.map(p => ({ type: p.type, coordinates: p.coords })) };
+  }
+
+  // Merge properties from all features
+  const mergedProps = {};
+  for (const f of features) Object.assign(mergedProps, f.properties || {});
+
+  const result = {
+    type: 'Feature',
+    id: `${type}/${id}`,
+    properties: mergedProps,
+    geometry: mergedGeometry
+  };
+  // Keep original member features for per-member GeoJSON output
+  result._memberFeatures = features;
+  return result;
+}
+
+// --- Build a bbox rectangle from Overpass element bounds ---
+function bboxFeatureFromElement(el) {
+  if (!el.bounds) return null;
+  const { minlat, minlon, maxlat, maxlon } = el.bounds;
+  return {
+    type: 'Feature',
+    geometry: {
+      type: 'Polygon',
+      coordinates: [[
+        [minlon, minlat], [maxlon, minlat],
+        [maxlon, maxlat], [minlon, maxlat],
+        [minlon, minlat]
+      ]]
+    }
+  };
+}
+
+// Replace a bbox outline with real geometry outline for a given key
+function updateOutlineForKey(key, feature, el) {
+  if (!allOutlinesLayer) return;
+  // Find and remove old layer for this key
+  let found = null;
+  allOutlinesLayer.eachLayer(outlineLayer => {
+    if (outlineLayer._osmKey === key) found = outlineLayer;
+  });
+  if (!found) return;
+  allOutlinesLayer.removeLayer(found);
+  const t = tc();
+  const outlineFeats = [feature, ...wayFeaturesFromMembers(el._rawMembers)];
+  const newLayer = L.geoJSON({ type: 'FeatureCollection', features: outlineFeats }, {
+    style: { color: t.outline, weight: t.outlineWeight, fill: false, opacity: t.outlineOp },
+    pointToLayer: (f, latlng) => L.circleMarker(latlng, { radius: 4, color: t.outline, fill: false, weight: t.outlineWeight, opacity: t.outlineOp })
+  });
+  newLayer._osmKey = key;
+  allOutlinesLayer.addLayer(newLayer);
+  if (_attachOutlineInteraction) _attachOutlineInteraction();
+}
+
+// --- Show all feature outlines on map ---
+function showAllOutlines(elements, featureMap) {
+  if (allOutlinesLayer) { map.removeLayer(allOutlinesLayer); allOutlinesLayer = null; }
+  _lastOutlineArgs = { elements, featureMap };
+  const t = tc();
+  const layers = [];
+  const bboxOnly = [];
+  elements.forEach(el => {
+    const key = `${el.type}/${el.id}`;
+    const cached = geometryCache.get(key);
+    const feature = cached || featureMap.get(key);
+    const realGeom = cached ? true : hasRealGeometry(feature, el);
+    if (realGeom) {
+      const outlineFeats = [feature, ...wayFeaturesFromMembers(el._rawMembers)];
+      const lyr = L.geoJSON({ type: 'FeatureCollection', features: outlineFeats }, {
+        style: { color: t.outline, weight: t.outlineWeight, fill: false, opacity: t.outlineOp },
+        pointToLayer: (f, latlng) => L.circleMarker(latlng, { radius: 4, color: t.outline, fill: false, weight: t.outlineWeight, opacity: t.outlineOp })
+      });
+      lyr._osmKey = key;
+      layers.push(lyr);
+    } else {
+      bboxOnly.push(key);
+      const bboxFeat = bboxFeatureFromElement(el);
+      if (bboxFeat) {
+        const lyr = L.geoJSON(bboxFeat, {
+          style: { color: t.outlineBbox, weight: 1, fill: false, opacity: t.outlineBboxOp, dashArray: '4,3' }
+        });
+        lyr._osmKey = key;
+        layers.push(lyr);
+      }
+    }
+  });
+  console.log(`Outlines: ${elements.length - bboxOnly.length} with geometry, ${bboxOnly.length} bbox-only` +
+    (bboxOnly.length ? ': ' + bboxOnly.join(', ') : ''));
+  if (layers.length > 0) {
+    allOutlinesLayer = L.layerGroup(layers).addTo(map);
+  }
+}
+
+// --- Show feature list grouped by type with filter chips ---
+function showFeatureList(elements, featureMap, queryLat, queryLng) {
+  const container = document.getElementById('feature-list');
+  const filterBar = document.getElementById('filter-bar');
+  container.innerHTML = '';
+  document.getElementById('geometry-output').innerHTML = '<div class="empty-state">Hover over a feature to preview,<br>click to select.</div>';
+
+  const allTypes = ['node', 'way', 'relation'];
+  let activeType = allTypes.find(t => elements.some(el => el.type === t)) || 'node';
+
+  // Build filter bar with tabs (always show all 3 types)
+  filterBar.style.display = 'flex';
+  filterBar.innerHTML = '';
+  const tabRefs = {};
+  for (const type of allTypes) {
+    const tab = document.createElement('div');
+    tab.className = `filter-tab ${type}`;
+    tab.innerHTML = `${type}<span class="chip-count">0</span>`;
+    tab.addEventListener('click', () => {
+      if (activeType === type || tab.classList.contains('disabled')) return;
+      activeType = type;
+      for (const t of allTypes) tabRefs[t].classList.toggle('active', t === type);
+      renderList();
+    });
+    tabRefs[type] = tab;
+    filterBar.appendChild(tab);
+  }
+
+  // Hide unnamed checkbox
+  const cbLabel = document.createElement('label');
+  cbLabel.className = 'hide-unnamed-toggle';
+  cbLabel.innerHTML = `<input type="checkbox"${hideUnnamed ? ' checked' : ''}> Hide unnamed`;
+  cbLabel.querySelector('input').addEventListener('change', (e) => {
+    hideUnnamed = e.target.checked;
+    renderList();
+    // Rebuild outlines with all filtered elements (all types, respecting hide-unnamed)
+    showAllOutlines(getFilteredElements(), featureMap);
+    _attachOutlineInteraction();
+  });
+  filterBar.appendChild(cbLabel);
+
+  function getFilteredElements() {
+    if (!hideUnnamed) return elements;
+    return elements.filter(el => el.tags && el.tags.name);
+  }
+
+  // Sorting helpers
+  function distToQuery(el) {
+    if (queryLat == null || queryLng == null) return 0;
+    const lat = el.lat != null ? el.lat : (el.bounds ? (el.bounds.minlat + el.bounds.maxlat) / 2 : 0);
+    const lng = el.lon != null ? el.lon : (el.bounds ? (el.bounds.minlon + el.bounds.maxlon) / 2 : 0);
+    const dLat = lat - queryLat, dLng = lng - queryLng;
+    return dLat * dLat + dLng * dLng;
+  }
+  function boundsArea(el) {
+    if (!el.bounds) return Infinity;
+    const { minlat, minlon, maxlat, maxlon } = el.bounds;
+    return (maxlat - minlat) * (maxlon - minlon);
+  }
+
+  function renderList() {
+    const filtered = getFilteredElements();
+    const groups = { node: [], way: [], relation: [] };
+    filtered.forEach(el => {
+      if (groups[el.type]) groups[el.type].push(el);
+    });
+    // Sort: named first, then by distance (nodes) or bounds area (ways/relations)
+    const hasName = el => (el.tags && el.tags.name) ? 0 : 1;
+    groups.node.sort((a, b) => hasName(a) - hasName(b) || distToQuery(a) - distToQuery(b));
+    groups.way.sort((a, b) => hasName(a) - hasName(b) || boundsArea(a) - boundsArea(b));
+    groups.relation.sort((a, b) => hasName(a) - hasName(b) || boundsArea(a) - boundsArea(b));
+    // Update tab counts and disable empty tabs
+    for (const type of allTypes) {
+      tabRefs[type].querySelector('.chip-count').textContent = groups[type].length;
+      tabRefs[type].classList.toggle('disabled', groups[type].length === 0);
+    }
+    // If active tab is now empty, switch to first non-empty tab
+    if (groups[activeType].length === 0) {
+      const next = allTypes.find(t => groups[t].length > 0);
+      if (next) activeType = next;
+    }
+    // Update active styling (in case activeType changed)
+    for (const t of allTypes) tabRefs[t].classList.toggle('active', t === activeType);
+    container.innerHTML = '';
+    const items = groups[activeType] || [];
+    items.forEach(el => {
+      container.appendChild(buildFeatureItem(el, featureMap, container));
+    });
+  }
+  // Attach click/hover handlers to map outline layers for bidirectional interaction
+  _attachOutlineInteraction = function() {
+    if (!allOutlinesLayer) return;
+    allOutlinesLayer.eachLayer(outlineLayer => {
+      const key = outlineLayer._osmKey;
+      if (!key) return;
+      outlineLayer.eachLayer(leafletLayer => {
+        leafletLayer.off('click mouseover mouseout');
+        leafletLayer.on('click', () => {
+          const type = key.split('/')[0];
+          if (activeType !== type && tabRefs[type] && !tabRefs[type].classList.contains('disabled')) {
+            activeType = type;
+            for (const t of allTypes) tabRefs[t].classList.toggle('active', t === type);
+            renderList();
+          }
+          const div = container.querySelector(`.feature-item[data-key="${key}"]`);
+          if (div) div.click();
+        });
+        leafletLayer.on('mouseover', () => {
+          container.querySelectorAll('.feature-item.map-hover').forEach(d => d.classList.remove('map-hover'));
+          // Switch tab if needed so the item is visible
+          const type = key.split('/')[0];
+          if (activeType !== type && tabRefs[type] && !tabRefs[type].classList.contains('disabled')) {
+            activeType = type;
+            for (const t of allTypes) tabRefs[t].classList.toggle('active', t === type);
+            renderList();
+          }
+          const div = container.querySelector(`.feature-item[data-key="${key}"]`);
+          if (div) {
+            div.classList.add('map-hover');
+            div.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }
+          const el = elements.find(e => `${e.type}/${e.id}` === key);
+          if (el) {
+            clearHover();
+            const cached = geometryCache.get(key);
+            const feat = featureMap.get(key);
+            const hoverFeat = cached || (hasRealGeometry(feat, el) ? feat : null);
+            if (hoverFeat) {
+              const t = tc();
+              const hoverFeatures = [hoverFeat, ...wayFeaturesFromMembers(el._rawMembers)];
+              hoverLayer = L.geoJSON({ type: 'FeatureCollection', features: hoverFeatures }, {
+                style: { color: t.hover, weight: t.hoverWeight, fill: false, dashArray: '5,5' },
+                pointToLayer: (f, ll) => L.circleMarker(ll, { radius: 8, color: t.hover, fillColor: t.hover, fillOpacity: 0.6, weight: 2 })
+              }).addTo(map);
+            }
+          }
+        });
+        leafletLayer.on('mouseout', () => {
+          container.querySelectorAll('.feature-item.map-hover').forEach(d => d.classList.remove('map-hover'));
+          clearHover();
+        });
+      });
+    });
+  };
+
+  renderList();
+}
+
+// OSM tag → human-readable label (from openstreetmap-website en-GB locale)
+const OSM_LABELS = {
+  aerialway:{cable_car:'Cable Car',chair_lift:'Chairlift',drag_lift:'Drag Lift',gondola:'Gondola Lift',station:'Aerialway Station',pylon:'Pylon',yes:'Aerialway'},
+  aeroway:{aerodrome:'Aerodrome',airstrip:'Airstrip',hangar:'Hangar',helipad:'Helipad',runway:'Runway',taxiway:'Taxiway',yes:'Aeroway'},
+  amenity:{animal_shelter:'Animal Shelter',arts_centre:'Arts Centre',atm:'Cash Machine',bank:'Bank',bar:'Bar',bbq:'BBQ',bench:'Bench',bicycle_parking:'Cycle Parking',bicycle_rental:'Cycle Rental',biergarten:'Beer Garden',boat_rental:'Boat Hire',bureau_de_change:'Bureau de Change',bus_station:'Bus Station',car_rental:'Car Hire',car_sharing:'Car Sharing',car_wash:'Car Wash',casino:'Casino',charging_station:'Charging Station',childcare:'Childcare',cinema:'Cinema',clinic:'Clinic',clock:'Clock',college:'College',community_centre:'Community Centre',conference_centre:'Conference Centre',courthouse:'Court',dentist:'Dentist',doctors:'Doctors',drinking_water:'Drinking Water',driving_school:'Driving School',embassy:'Embassy',events_venue:'Events Venue',fast_food:'Fast Food',ferry_terminal:'Ferry Terminal',fire_station:'Fire Station',food_court:'Food Court',fountain:'Fountain',grave_yard:'Graveyard',hospital:'Hospital',ice_cream:'Ice Cream',internet_cafe:'Internet Cafe',kindergarten:'Nursery',library:'Library',marketplace:'Marketplace',monastery:'Monastery',motorcycle_parking:'Motorcycle Parking',music_school:'Music School',nightclub:'Night Club',nursing_home:'Nursing Home',parking:'Parking',parking_entrance:'Parking Entrance',parking_space:'Parking Space',pharmacy:'Pharmacy',place_of_worship:'Place of Worship',police:'Police',post_box:'Post Box',post_office:'Post Office',prison:'Prison',pub:'Pub',public_building:'Public Building',recycling:'Recycling Point',restaurant:'Restaurant',school:'School',shelter:'Shelter',social_facility:'Social Facility',studio:'Studio',swimming_pool:'Swimming Pool',taxi:'Taxi',telephone:'Public Telephone',theatre:'Theatre',toilets:'Toilets',townhall:'Town Hall',university:'University',vending_machine:'Vending Machine',veterinary:'Veterinary',village_hall:'Village Hall',waste_basket:'Waste Bin',yes:'Amenity'},
+  boundary:{administrative:'Administrative Boundary',census:'Census Boundary',national_park:'National Park',protected_area:'Protected Area',yes:'Boundary'},
+  bridge:{aqueduct:'Aqueduct',viaduct:'Viaduct',yes:'Bridge'},
+  building:{apartment:'Flat',apartments:'Flats',bungalow:'Bungalow',cabin:'Cabin',chapel:'Chapel',college:'College Building',commercial:'Commercial Building',construction:'Building under Construction',garage:'Garage',garages:'Garages',house:'House',industrial:'Industrial Building',roof:'Roof',yes:'Building'},
+  craft:{brewery:'Brewery',carpenter:'Carpenter',electrician:'Electrician',gardener:'Gardener',painter:'Painter',photographer:'Photographer',plumber:'Plumber',shoemaker:'Shoemaker',tailor:'Tailor',yes:'Craft Shop'},
+  emergency:{ambulance_station:'Ambulance Station',assembly_point:'Assembly Point',defibrillator:'Defibrillator',phone:'Emergency Phone'},
+  highway:{bridleway:'Bridleway',bus_stop:'Bus Stop',construction:'Road under Construction',cycleway:'Cycle Path',footway:'Footpath',living_street:'Living Street',motorway:'Motorway',motorway_junction:'Motorway Junction',motorway_link:'Motorway Road',path:'Path',pedestrian:'Pedestrian Way',platform:'Platform',primary:'Primary Road',primary_link:'Primary Road',residential:'Residential Road',secondary:'Secondary Road',secondary_link:'Secondary Road',service:'Service Road',steps:'Steps',tertiary:'Tertiary Road',tertiary_link:'Tertiary Road',track:'Track',trunk:'Trunk Road',trunk_link:'Trunk Road',unclassified:'Unclassified Road',yes:'Road'},
+  historic:{archaeological_site:'Archaeological Site',battlefield:'Battlefield',building:'Historic Building',bunker:'Bunker',castle:'Castle',church:'Church',city_gate:'City Gate',fort:'Fort',memorial:'Memorial',monument:'Monument',ruins:'Ruins',tomb:'Tomb',tower:'Tower',yes:'Historic Site'},
+  landuse:{allotments:'Allotments',basin:'Basin',brownfield:'Brownfield Land',cemetery:'Cemetery',commercial:'Commercial Area',farmland:'Farmland',farmyard:'Farmyard',forest:'Forest',garages:'Garages',grass:'Grass',greenfield:'Greenfield Land',industrial:'Industrial Area',landfill:'Landfill',meadow:'Meadow',military:'Military Area',orchard:'Orchard',quarry:'Quarry',recreation_ground:'Recreation Ground',reservoir:'Reservoir',residential:'Residential Area',vineyard:'Vineyard',yes:'Landuse'},
+  leisure:{beach_resort:'Beach Resort',bird_hide:'Bird Hide',common:'Common Land',dog_park:'Dog Park',fitness_centre:'Fitness Centre',garden:'Garden',golf_course:'Golf Course',ice_rink:'Ice Rink',marina:'Marina',miniature_golf:'Miniature Golf',nature_reserve:'Nature Reserve',park:'Park',pitch:'Sports Pitch',playground:'Playground',recreation_ground:'Recreation Ground',resort:'Resort',sports_centre:'Sports Centre',stadium:'Stadium',swimming_pool:'Swimming Pool',track:'Running Track',water_park:'Water Park',yes:'Leisure'},
+  man_made:{beacon:'Beacon',breakwater:'Breakwater',bridge:'Bridge',chimney:'Chimney',communications_tower:'Communications Tower',crane:'Crane',embankment:'Embankment',flagpole:'Flagpole',lighthouse:'Lighthouse',mast:'Mast',pier:'Pier',pipeline:'Pipeline',silo:'Silo',storage_tank:'Storage Tank',surveillance:'Surveillance',tower:'Tower',wastewater_plant:'Wastewater Plant',water_tower:'Water Tower',water_works:'Water Works',windmill:'Windmill',works:'Factory',yes:'Man-made'},
+  military:{airfield:'Military Airfield',barracks:'Barracks',bunker:'Bunker',yes:'Military'},
+  natural:{bay:'Bay',beach:'Beach',cape:'Cape',cave_entrance:'Cave Entrance',cliff:'Cliff',crater:'Crater',fell:'Fell',forest:'Forest',geyser:'Geyser',glacier:'Glacier',grassland:'Grassland',heath:'Heath',hill:'Hill',island:'Island',marsh:'Marsh',moor:'Moor',peak:'Peak',reef:'Reef',ridge:'Ridge',rock:'Rock',saddle:'Saddle',scrub:'Scrub',spring:'Spring',stone:'Stone',tree:'Tree',valley:'Valley',volcano:'Volcano',water:'Water',wetland:'Wetland',wood:'Wood'},
+  office:{accountant:'Accountant',administrative:'Administration',architect:'Architect',company:'Company',estate_agent:'Estate Agent',government:'Governmental Office',insurance:'Insurance Office',it:'IT Office',lawyer:'Lawyer',ngo:'NGO Office',travel_agent:'Travel Agency',yes:'Office'},
+  place:{city:'City',country:'Country',county:'County',farm:'Farm',hamlet:'Hamlet',house:'House',island:'Island',locality:'Locality',municipality:'Municipality',neighbourhood:'Neighbourhood',quarter:'Quarter',region:'Region',sea:'Sea',square:'Square',state:'State',suburb:'Suburb',town:'Town',village:'Village',yes:'Place'},
+  public_transport:{platform:'Platform',station:'Station',stop_area:'Stop Area',stop_position:'Stop Position'},
+  railway:{funicular:'Funicular Railway',halt:'Train Stop',junction:'Railway Junction',level_crossing:'Level Crossing',light_rail:'Light Rail',monorail:'Monorail',narrow_gauge:'Narrow Gauge Railway',platform:'Railway Platform',station:'Railway Station',stop:'Railway Stop',subway:'Subway Station',subway_entrance:'Subway Entrance',tram:'Tramway',tram_stop:'Tram Stop',yes:'Railway'},
+  shop:{alcohol:'Off-licence',antiques:'Antiques',art:'Art Shop',bakery:'Bakery',beauty:'Beauty Shop',beverages:'Beverages Shop',bicycle:'Bicycle Shop',bookmaker:'Bookmaker',books:'Book Shop',boutique:'Boutique',butcher:'Butcher',car:'Car Shop',car_parts:'Car Parts',car_repair:'Mechanic',charity:'Charity Shop',chemist:'Chemist',clothes:'Clothes Shop',computer:'Computer Shop',confectionery:'Sweet Shop',convenience:'Convenience Store',copyshop:'Copy Shop',cosmetics:'Cosmetics Shop',deli:'Delicatessen',department_store:'Department Store',doityourself:'DIY Shop',dry_cleaning:'Dry Cleaning',electronics:'Electronics Shop',estate_agent:'Estate Agent',farm:'Farm Shop',fashion:'Fashion Shop',florist:'Florist',food:'Food Shop',funeral_directors:'Funeral Directors',furniture:'Furniture',garden_centre:'Garden Centre',general:'General Store',gift:'Gift Shop',greengrocer:'Greengrocer',grocery:'Grocery Shop',hairdresser:'Hairdresser',hardware:'Hardware Store',jewelry:'Jewellery Shop',kiosk:'Kiosk',laundry:'Laundry',mall:'Mall',massage:'Massage',mobile_phone:'Mobile Phone Shop',motorcycle:'Motorcycle Shop',music:'Music Shop',newsagent:'Newsagent',optician:'Optician',organic:'Organic Food Shop',outdoor:'Outdoor Shop',pet:'Pet Shop',photo:'Photo Shop',seafood:'Seafood',second_hand:'Second-hand Shop',shoes:'Shoe Shop',sports:'Sports Shop',supermarket:'Supermarket',tailor:'Tailor',ticket:'Ticket Shop',tobacco:'Tobacconist',toys:'Toy Shop',travel_agency:'Travel Agency',video:'Video Shop',wine:'Off-licence',yes:'Shop'},
+  tourism:{alpine_hut:'Alpine Hut',apartment:'Holiday Flat',artwork:'Artwork',attraction:'Attraction',bed_and_breakfast:'Bed and Breakfast',camp_site:'Camp Site',caravan_site:'Caravan Site',chalet:'Chalet',gallery:'Gallery',guest_house:'Guest House',hostel:'Hostel',hotel:'Hotel',information:'Information',motel:'Motel',museum:'Museum',picnic_site:'Picnic Site',theme_park:'Theme Park',viewpoint:'Viewpoint',zoo:'Zoo'},
+  tunnel:{culvert:'Culvert',yes:'Tunnel'},
+  waterway:{boatyard:'Boatyard',canal:'Canal',dam:'Dam',ditch:'Ditch',dock:'Dock',drain:'Drain',lock:'Lock',lock_gate:'Lock Gate',rapids:'Rapids',river:'River',stream:'Stream',waterfall:'Waterfall',weir:'Weir',yes:'Waterway'},
+  route:{bicycle:'Cycle Route',bus:'Bus Route',ferry:'Ferry Route',hiking:'Hiking Route',horse:'Horse Route',light_rail:'Light Rail Route',mtb:'MTB Route',piste:'Piste Route',railway:'Railway Route',road:'Road Route',tram:'Tram Route',train:'Train Route'},
+  barrier:{block:'Block',bollard:'Bollard',cattle_grid:'Cattle Grid',chain:'Chain',city_wall:'City Wall',cycle_barrier:'Cycle Barrier',fence:'Fence',gate:'Gate',hedge:'Hedge',kerb:'Kerb',kissing_gate:'Kissing Gate',lift_gate:'Lift Gate',retaining_wall:'Retaining Wall',stile:'Stile',toll_booth:'Toll Booth',wall:'Wall',yes:'Barrier'},
+  power:{generator:'Power Generator',line:'Power Line',minor_line:'Minor Power Line',plant:'Power Plant',pole:'Power Pole',station:'Power Station',sub_station:'Power Substation',substation:'Power Substation',tower:'Power Tower',transformer:'Transformer',yes:'Power'},
+};
+
+// Priority order for which tag key defines the "category" of a feature
+const CATEGORY_KEYS = Object.keys(OSM_LABELS);
+
+function getCategory(tags) {
+  if (!tags) return '';
+  for (const key of CATEGORY_KEYS) {
+    if (tags[key] && OSM_LABELS[key]) {
+      const val = tags[key];
+      // Lookup in the label table first, then humanize as fallback
+      if (OSM_LABELS[key][val]) return OSM_LABELS[key][val];
+      return val.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+  }
+  return '';
+}
+
+// Geometry type → small SVG icon + label
+const GEOM_ICONS = {
+  Point:              `<svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="3" fill="#aaa"/></svg>`,
+  MultiPoint:         `<svg width="12" height="12" viewBox="0 0 12 12"><circle cx="3" cy="6" r="2" fill="#aaa"/><circle cx="9" cy="6" r="2" fill="#aaa"/><circle cx="6" cy="3" r="2" fill="#aaa"/></svg>`,
+  LineString:         `<svg width="12" height="12" viewBox="0 0 12 12"><polyline points="1,10 5,3 11,8" fill="none" stroke="#aaa" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  MultiLineString:    `<svg width="12" height="12" viewBox="0 0 12 12"><polyline points="1,9 5,3 9,7" fill="none" stroke="#aaa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><polyline points="3,11 7,5 11,9" fill="none" stroke="#aaa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  Polygon:            `<svg width="12" height="12" viewBox="0 0 12 12"><polygon points="6,1 11,5 9,11 3,11 1,5" fill="#aaa" fill-opacity="0.25" stroke="#aaa" stroke-width="1.3" stroke-linejoin="round"/></svg>`,
+  MultiPolygon:       `<svg width="12" height="12" viewBox="0 0 12 12"><polygon points="2,2 7,1 8,6 3,7" fill="#aaa" fill-opacity="0.2" stroke="#aaa" stroke-width="1.2" stroke-linejoin="round"/><polygon points="5,5 11,4 11,11 4,11" fill="#aaa" fill-opacity="0.2" stroke="#aaa" stroke-width="1.2" stroke-linejoin="round"/></svg>`,
+  GeometryCollection: `<svg width="12" height="12" viewBox="0 0 12 12"><circle cx="3" cy="4" r="2" fill="#aaa"/><polyline points="5,9 8,3 11,8" fill="none" stroke="#aaa" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><rect x="1" y="8" width="4" height="3" rx="0.5" fill="#aaa" fill-opacity="0.25" stroke="#aaa" stroke-width="1"/></svg>`,
+};
+
+function geomTypeHtml(feature, el) {
+  if (!feature || !feature.geometry) return '';
+  let gtype = feature.geometry.type;
+  // For relations with supplementary way members, effective type may be richer
+  if (el && el.type === 'relation' && (el._rawMembers || el.members)) {
+    const hasWays = wayFeaturesFromMembers(el._rawMembers || el.members).length > 0;
+    if (hasWays && (gtype === 'Point' || gtype === 'MultiPoint')) {
+      gtype = 'GeometryCollection';
+    }
+  }
+  const icon = GEOM_ICONS[gtype] || '';
+  return `<div class="geom-type-line">${icon}${gtype}</div>`;
+}
+
+function buildFeatureItem(el, featureMap, container) {
+  const name = (el.tags && (el.tags.name || el.tags.ref || el.tags.description)) || '';
+  const nameEn = (el.tags && el.tags['name:en']) || '';
+  const category = getCategory(el.tags);
+  const label = category
+    ? (name ? `${category} ${name}` : category)
+    : (name || `${el.type}/${el.id}`);
+  const key = `${el.type}/${el.id}`;
+  const feature = featureMap && featureMap.get(key);
+  const realGeom = hasRealGeometry(feature, el);
+
+  const div = document.createElement('div');
+  div.className = 'feature-item';
+  div.dataset.key = key;
+  div.innerHTML = `
+    <div class="feature-item-line1">
+      ${category ? `<span class="category">${esc(category)}</span>` : ''}
+      ${!realGeom ? '<span class="bbox-flag" title="Bounding box only — click to fetch full geometry">bbox</span>' : ''}
+      <span class="feat-id">${el.id}</span>
+    </div>
+    ${name ? `<div class="feature-item-name" title="${esc(name)}">${esc(name)}</div>` : ''}
+    ${nameEn && nameEn !== name ? `<div class="feature-item-name-en" title="${esc(nameEn)}">${esc(nameEn)}</div>` : ''}
+    ${realGeom ? geomTypeHtml(feature, el) : ''}
+  `;
+
+  div.addEventListener('mouseenter', () => {
+    clearHover();
+    const cached = geometryCache.get(key);
+    const hoverFeat = cached || (realGeom ? feature : null);
+    if (hoverFeat) {
+      const t = tc();
+      const hoverFeatures = [hoverFeat, ...wayFeaturesFromMembers(el._rawMembers)];
+      hoverLayer = L.geoJSON({ type: 'FeatureCollection', features: hoverFeatures }, {
+        style: { color: t.hover, weight: t.hoverWeight, fill: false, dashArray: '5,5' },
+        pointToLayer: (f, latlng) => L.circleMarker(latlng, { radius: 8, color: t.hover, fillColor: t.hover, fillOpacity: 0.6, weight: 2 })
+      }).addTo(map);
+    } else {
+      const bboxFeat = bboxFeatureFromElement(el);
+      if (bboxFeat) {
+        const t = tc();
+        hoverLayer = L.geoJSON(bboxFeat, {
+          style: { color: t.hover, weight: t.hoverWeight - 1, fill: false, dashArray: '8,4' }
+        }).addTo(map);
+      }
+    }
+  });
+  div.addEventListener('mouseleave', () => clearHover());
+
+  div.addEventListener('click', () => {
+    container.querySelectorAll('.feature-item').forEach(d => d.classList.remove('active'));
+    div.classList.add('active');
+    clearHover();
+    if (queryBufferLayer) { map.removeLayer(queryBufferLayer); queryBufferLayer = null; }
+    // Check cache first, then use pre-loaded geometry, then fetch
+    const cached = geometryCache.get(key);
+    function updateGeomBadge(feat) {
+      if (!div.querySelector('.geom-type-line')) {
+        const html = geomTypeHtml(feat, el);
+        if (html) div.insertAdjacentHTML('beforeend', html);
+      }
+    }
+    if (cached) {
+      displayGeometry(cached, el.tags, el.type, el.id, el._rawMembers);
+      const flag = div.querySelector('.bbox-flag');
+      if (flag) { flag.remove(); updateOutlineForKey(key, cached, el); }
+      updateGeomBadge(cached);
+      history.replaceState(null, '', `#${key}`);
+      setStatus(`Loaded ${key} (cached)`, 'success');
+    } else if (realGeom) {
+      displayGeometry(feature, el.tags, el.type, el.id, el._rawMembers);
+      history.replaceState(null, '', `#${key}`);
+      setStatus(`Loaded ${key}`, 'success');
+    } else {
+      // Show header + loading spinner in details panel, bbox animation on map
+      (async () => {
+        const fType = el.type.toUpperCase();
+        document.getElementById('geometry-output').innerHTML = `
+          <div class="feature-header">
+            <div class="feature-header-line1">
+              <span class="type-badge ${el.type}">${fType}</span>
+              ${category ? `<span class="category">${esc(category)}</span>` : ''}
+              <span class="feat-id">${el.id}</span>
+            </div>
+            ${name ? `<div class="feature-header-name">${esc(name)}</div>` : ''}
+            ${nameEn && nameEn !== name ? `<div class="feature-header-name-en">${esc(nameEn)}</div>` : ''}
+          </div>
+          <div class="loading-state">
+            <div class="panel-spinner"></div>
+            Fetching geometry\u2026
+          </div>`;
+        setStatus(`Fetching exact geometry for ${key}...`, 'loading');
+        if (geojsonLayer) { map.removeLayer(geojsonLayer); geojsonLayer = null; }
+        const bboxFeat = bboxFeatureFromElement(el);
+        if (bboxFeat) {
+          const lt = tc();
+          geojsonLayer = L.geoJSON(bboxFeat, {
+            style: { color: lt.queryBuffer, weight: lt.selectedWeight, fill: false }
+          }).addTo(map);
+          geojsonLayer.eachLayer(l => {
+            const pathEl = l.getElement();
+            if (pathEl) pathEl.classList.add('query-buffer');
+          });
+          map.fitBounds(geojsonLayer.getBounds().pad(0.3));
+        }
+        try {
+          const query = `[out:json][timeout:25];${el.type}(${el.id});out geom;`;
+          const data = await overpassQuery(query);
+          if (!data.elements || data.elements.length === 0) {
+            setStatus(`No results for ${key}`, 'error'); return;
+          }
+          setStatus(`Processing geometry for ${key}...`, 'loading');
+          preserveRawMembers(data.elements);
+          const geojson = osmtogeojson(data);
+          const merged = mergeFeatures(geojson, el.type, el.id);
+          if (!merged) {
+            setStatus(`Could not convert ${key} to geometry`, 'error'); return;
+          }
+          geometryCache.set(key, merged);
+          displayGeometry(merged, el.tags, el.type, el.id, data.elements[0]?._rawMembers);
+          const flag = div.querySelector('.bbox-flag');
+          if (flag) flag.remove();
+          updateGeomBadge(merged);
+          updateOutlineForKey(key, merged, el);
+          history.replaceState(null, '', `#${key}`);
+          setStatus(`Loaded ${key}`, 'success');
+        } catch (overpassErr) {
+          // Fallback: OSM API v0.6
+          try {
+            setStatus(`Trying OSM API for ${key}...`, 'loading');
+            const data = await fetchFromOsmApi(el.type, el.id);
+            const mainEl = data.elements?.find(e => e.type === el.type && String(e.id) === String(el.id));
+            setStatus(`Processing geometry for ${key}...`, 'loading');
+            enrichMembersFromFull(mainEl, data.elements);
+            preserveRawMembers(data.elements);
+            const geojson = osmtogeojson(data);
+            const merged = mergeFeatures(geojson, el.type, el.id);
+            if (!merged) {
+              setStatus(`Could not convert ${key} to geometry`, 'error'); return;
+            }
+            geometryCache.set(key, merged);
+            displayGeometry(merged, el.tags, el.type, el.id, mainEl?._rawMembers);
+            const flag = div.querySelector('.bbox-flag');
+            if (flag) flag.remove();
+            updateGeomBadge(merged);
+            updateOutlineForKey(key, merged, el);
+            history.replaceState(null, '', `#${key}`);
+            setStatus(`Loaded ${key} (via OSM API)`, 'success');
+          } catch (apiErr) {
+            setStatus(`All sources failed: ${overpassErr.message}`, 'error');
+          }
+        }
+      })();
+    }
+  });
+
+  return div;
+}
+
+// --- Display geometry on map + output ---
+function displayGeometry(feature, rawTags, osmType, osmId, rawMembers) {
+  if (geojsonLayer) { map.removeLayer(geojsonLayer); geojsonLayer = null; }
+  clearHover();
+  const outputEl = document.getElementById('geometry-output');
+
+  // Tags — merge raw OSM tags so tags are always visible
+  const props = feature.properties || {};
+  const tags = rawTags ? { ...props, ...rawTags } : props;
+  // Filter out osmtogeojson meta keys
+  const tagEntries = Object.entries(tags).filter(([k]) => !k.startsWith('@') && k !== 'id' && k !== 'type');
+  // Clean tags for GeoJSON properties (no meta keys)
+  const cleanTags = {};
+  for (const [k, v] of tagEntries) cleanTags[k] = v;
+
+  // Build supplementary way member features from raw Overpass members
+  // (osmtogeojson may not include way geometries for some relation types like stop_area)
+  const suppWayFeats = wayFeaturesFromMembers(rawMembers);
+
+  // Build GeoJSON output: full Feature with tags as properties
+  // For merged relations with _memberFeatures, output a FeatureCollection
+  // where each member keeps its own tags
+  let geojsonOut;
+  if (feature._memberFeatures && feature._memberFeatures.length > 1) {
+    // Build role lookup from raw Overpass members: "type/ref" → role
+    const cleanRef = r => String(r).replace(/^_fullGeom/, '');
+    const roleMap = new Map();
+    if (Array.isArray(rawMembers)) {
+      for (const m of rawMembers) {
+        if (m.type && m.ref) roleMap.set(`${m.type}/${cleanRef(m.ref)}`, m.role || '');
+      }
+    }
+    const relId = osmId ? Number(osmId) : (feature.id ? Number(String(feature.id).split('/')[1]) : null);
+    // FeatureCollection with per-member tags + role
+    const memberFeaturesOut = feature._memberFeatures.map(mf => {
+      const mProps = mf.properties || {};
+      const mClean = {};
+      for (const [k, v] of Object.entries(mProps)) {
+        if (!k.startsWith('@') && k !== 'id' && k !== 'type') mClean[k] = v;
+      }
+      // Extract role: prefer raw Overpass members, fallback to @relations meta
+      const mfCleanId = mf.id ? mf.id.replace('/_fullGeom', '/') : null;
+      if (mfCleanId && roleMap.has(mfCleanId)) {
+        const role = roleMap.get(mfCleanId);
+        if (role) mClean.role = role;
+      } else if (relId && Array.isArray(mProps['@relations'])) {
+        const relEntry = mProps['@relations'].find(r => r.rel === relId);
+        if (relEntry && relEntry.role) mClean.role = relEntry.role;
+      }
+      return {
+        type: 'Feature',
+        ...(mfCleanId ? { id: mfCleanId } : {}),
+        properties: mClean,
+        geometry: mf.geometry
+      };
+    });
+    // Add way member features with roles from rawMembers
+    if (suppWayFeats.length > 0 && Array.isArray(rawMembers)) {
+      let wayIdx = 0;
+      for (const m of rawMembers) {
+        if (m.type === 'way' && Array.isArray(m.geometry) && m.geometry.length >= 2) {
+          const wf = { ...suppWayFeats[wayIdx], properties: { ...suppWayFeats[wayIdx].properties } };
+          wf.id = `way/${cleanRef(m.ref)}`;
+          if (m.role) wf.properties.role = m.role;
+          memberFeaturesOut.push(wf);
+          wayIdx++;
+        }
+      }
+    }
+    geojsonOut = {
+      type: 'FeatureCollection',
+      properties: cleanTags,
+      features: memberFeaturesOut
+    };
+  } else {
+    if (suppWayFeats.length > 0) {
+      // Relation with no _memberFeatures but has way members from raw data
+      const allFeats = [{ type: 'Feature', ...(feature.id ? { id: feature.id } : {}), properties: cleanTags, geometry: feature.geometry }, ...suppWayFeats];
+      geojsonOut = { type: 'FeatureCollection', properties: cleanTags, features: allFeats };
+    } else {
+      geojsonOut = {
+        type: 'Feature',
+        ...(feature.id ? { id: feature.id } : {}),
+        properties: cleanTags,
+        geometry: feature.geometry
+      };
+    }
+  }
+  const geomJson = JSON.stringify(geojsonOut, null, 2);
+
+  // Bounding box (xmin,ymin,xmax,ymax = lon/lat) computed from all coordinates
+  function extractCoords(geom) {
+    if (!geom) return [];
+    if (geom.type === 'Point') return [geom.coordinates];
+    if (geom.type === 'MultiPoint' || geom.type === 'LineString') return geom.coordinates;
+    if (geom.type === 'MultiLineString' || geom.type === 'Polygon') return geom.coordinates.flat();
+    if (geom.type === 'MultiPolygon') return geom.coordinates.flat(2);
+    if (geom.type === 'GeometryCollection') return geom.geometries.flatMap(g => extractCoords(g));
+    return [];
+  }
+  const allCoords = extractCoords(feature.geometry);
+  // Include way member coords for complete bbox
+  for (const wf of suppWayFeats) allCoords.push(...extractCoords(wf.geometry));
+  let bboxStr = '';
+  let xmin = Infinity, ymin = Infinity, xmax = -Infinity, ymax = -Infinity;
+  if (allCoords.length > 0) {
+    for (const c of allCoords) {
+      if (c[0] < xmin) xmin = c[0];
+      if (c[1] < ymin) ymin = c[1];
+      if (c[0] > xmax) xmax = c[0];
+      if (c[1] > ymax) ymax = c[1];
+    }
+    bboxStr = `${xmin},${ymin},${xmax},${ymax}`;
+  }
+
+  // WKT — build combined geometry if we have supplementary way members
+  let wktGeom = feature.geometry;
+  if (suppWayFeats.length > 0) {
+    const allGeoms = [feature.geometry, ...suppWayFeats.map(f => f.geometry)].filter(Boolean);
+    wktGeom = allGeoms.length === 1 ? allGeoms[0] : { type: 'GeometryCollection', geometries: allGeoms };
+  }
+  let wkt = '';
+  try {
+    wkt = Terraformer.geojsonToWKT(wktGeom);
+  } catch (e) {
+    wkt = '(WKT conversion not supported for this geometry type)';
+  }
+  let tagsHtml = '';
+  if (tagEntries.length > 0) {
+    tagsHtml = `<div class="output-section">
+      <details class="tags-collapsible">
+        <summary><label>Tags</label> <span class="tag-count">(${tagEntries.length})</span></summary>
+        <table class="tags-table">${tagEntries.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(String(v))}</td></tr>`).join('')}</table>
+      </details>
+    </div>`;
+  }
+
+  // Object stats (node counts, member tree)
+  function countNodes(geom) { return extractCoords(geom).length; }
+  let statsHtml = '';
+  if (osmType === 'way') {
+    const nodeCount = countNodes(feature.geometry);
+    statsHtml = `<div class="output-section">
+      <label>Stats</label>
+      <div class="stats-info">${nodeCount} nodes</div>
+    </div>`;
+  } else if (osmType === 'relation') {
+    let membersTreeHtml = '';
+    let totalNodes = 0;
+    if (Array.isArray(rawMembers) && rawMembers.length > 0) {
+      const cleanRef = r => String(r).replace(/^_fullGeom/, '');
+      const memberFeatureMap = new Map();
+      if (feature._memberFeatures) {
+        for (const mf of feature._memberFeatures) {
+          if (mf.id) memberFeatureMap.set(mf.id.replace('/_fullGeom', '/'), mf);
+        }
+      }
+      const memberLines = rawMembers.map((m, i) => {
+        const isLast = i === rawMembers.length - 1;
+        const prefix = isLast ? '\u2514' : '\u251C';
+        let nodeInfo = '';
+        let memberNodeCount = 0;
+        if (m.type === 'node') {
+          memberNodeCount = 1;
+        } else if (m.type === 'way') {
+          if (Array.isArray(m.geometry)) {
+            // Overpass format: inline geometry on member
+            memberNodeCount = m.geometry.filter(p => p != null).length;
+          } else {
+            // OSM API format: no inline geometry, use merged feature
+            const mKey = `way/${cleanRef(m.ref)}`;
+            const mFeature = memberFeatureMap.get(mKey);
+            if (mFeature && mFeature.geometry) memberNodeCount = countNodes(mFeature.geometry);
+          }
+          if (memberNodeCount) nodeInfo = ` (${memberNodeCount} nodes)`;
+        } else if (m.type === 'relation') {
+          const mKey = `relation/${cleanRef(m.ref)}`;
+          const mFeature = memberFeatureMap.get(mKey);
+          if (mFeature && mFeature.geometry) {
+            memberNodeCount = countNodes(mFeature.geometry);
+            nodeInfo = ` (${memberNodeCount} nodes)`;
+          }
+        }
+        totalNodes += memberNodeCount;
+        const roleStr = m.role ? ` [${esc(m.role)}]` : '';
+        return `${prefix} ${m.type} ${cleanRef(m.ref)}${roleStr}${nodeInfo}`;
+      });
+      // Fallback: if per-member counting yielded 0 (e.g. OSM API without _memberFeatures),
+      // compute total from the merged geometry + supplementary way features
+      if (totalNodes === 0) {
+        totalNodes = countNodes(feature.geometry);
+        for (const wf of suppWayFeats) totalNodes += countNodes(wf.geometry);
+      }
+      membersTreeHtml = `
+        <details class="members-tree">
+          <summary>${rawMembers.length} members</summary>
+          <pre class="members-tree-content">${memberLines.join('\n')}</pre>
+        </details>`;
+    } else {
+      totalNodes = countNodes(feature.geometry);
+    }
+    statsHtml = `<div class="output-section">
+      <label>Stats</label>
+      <div class="stats-info">${totalNodes} nodes total</div>
+      ${membersTreeHtml}
+    </div>`;
+  }
+
+  // Feature header: use passed-in OSM type/id, fallback to parsing feature.id
+  const fId = feature.id || '';
+  const fType = osmType ? osmType.toUpperCase() : (fId.split('/')[0] || '').toUpperCase();
+  const fNum = osmId ? String(osmId) : (fId.split('/')[1] || '');
+  const fName = tags.name || '';
+  const fNameEn = tags['name:en'] || '';
+  const fCategory = getCategory(tags);
+
+  // Effective geometry type (accounting for supplementary way members)
+  let effectiveGeomType = feature.geometry ? feature.geometry.type : '';
+  if (osmType === 'relation' && suppWayFeats.length > 0 && (effectiveGeomType === 'Point' || effectiveGeomType === 'MultiPoint')) {
+    effectiveGeomType = 'GeometryCollection';
+  }
+  const geomIcon = GEOM_ICONS[effectiveGeomType] || '';
+
+  outputEl.innerHTML = `
+    <div class="feature-header">
+      <div class="feature-header-line1">
+        <span class="type-badge ${fType.toLowerCase()}">${fType}</span>
+        ${fCategory ? `<span class="category">${esc(fCategory)}</span>` : ''}
+        <span class="feat-id">${fNum}</span>
+      </div>
+      ${fName ? `<div class="feature-header-name">${esc(fName)}</div>` : ''}
+      ${fNameEn && fNameEn !== fName ? `<div class="feature-header-name-en">${esc(fNameEn)}</div>` : ''}
+      ${effectiveGeomType ? `<div class="geom-type-line" style="margin-top:6px">${geomIcon}${effectiveGeomType}</div>` : ''}
+    </div>
+    ${tagsHtml}
+    ${bboxStr ? `<div class="output-section" id="bbox-section">
+      <div class="section-header">
+        <label>Bounding Box</label>
+        <button class="copy-btn" onclick="copyText(this, 'bbox-out')">Copy</button>
+      </div>
+      <input type="text" id="bbox-out" class="bbox-value" value="${esc(bboxStr)}" readonly />
+    </div>` : ''}
+    <div class="output-section">
+      <div class="section-header">
+        <label>GeoJSON</label>
+        <button class="copy-btn" onclick="copyText(this, 'geojson-out')">Copy</button>
+      </div>
+      <textarea id="geojson-out" readonly>${esc(geomJson)}</textarea>
+    </div>
+    <div class="output-section">
+      <div class="section-header">
+        <label>WKT</label>
+        <button class="copy-btn" onclick="copyText(this, 'wkt-out')">Copy</button>
+      </div>
+      <textarea id="wkt-out" readonly>${esc(wkt)}</textarea>
+    </div>
+    ${statsHtml}
+  `;
+
+  // Render on map
+  const t = tc();
+  _lastSelectedFeature = { feature, rawTags, osmType, osmId, rawMembers };
+
+  const renderFeatures = [feature, ...suppWayFeats];
+  geojsonLayer = L.geoJSON({ type: 'FeatureCollection', features: renderFeatures }, {
+    style: { color: t.selected, weight: t.selectedWeight, fillColor: t.selected, fillOpacity: t.selectedFill },
+    pointToLayer: (f, latlng) => L.circleMarker(latlng, {
+      radius: 8, color: t.pointStroke, weight: t.pointStrokeWeight,
+      fillColor: t.point, fillOpacity: t.pointFill
+    })
+  }).addTo(map);
+
+  const gb = geojsonLayer.getBounds();
+  if (gb.getNorthEast().equals(gb.getSouthWest())) {
+    // Point geometry — zoom in to 18 (or keep if already closer)
+    map.setView(gb.getCenter(), Math.max(map.getZoom(), 18));
+  } else {
+    map.fitBounds(gb.pad(0.2));
+  }
+
+  // Bbox hover preview on map
+  const bboxSection = document.getElementById('bbox-section');
+  if (bboxSection && allCoords.length > 0) {
+    let bboxLayer = null;
+    bboxSection.addEventListener('mouseenter', () => {
+      if (bboxLayer) return;
+      const bounds = [[ymin, xmin], [ymax, xmax]];
+      const bt = tc();
+      bboxLayer = L.rectangle(bounds, {
+        color: bt.bboxHover, weight: bt.hoverWeight - 1, fill: false, dashArray: '6,4'
+      }).addTo(map);
+    });
+    bboxSection.addEventListener('mouseleave', () => {
+      if (bboxLayer) { map.removeLayer(bboxLayer); bboxLayer = null; }
+    });
+  }
+}
+
+// --- Helpers ---
+function clearHover() {
+  if (hoverLayer) { map.removeLayer(hoverLayer); hoverLayer = null; }
+}
+
+function clearMap() {
+  if (geojsonLayer) { map.removeLayer(geojsonLayer); geojsonLayer = null; }
+  if (markerLayer) { map.removeLayer(markerLayer); markerLayer = null; }
+  if (queryBufferLayer) { map.removeLayer(queryBufferLayer); queryBufferLayer = null; }
+  if (allOutlinesLayer) { map.removeLayer(allOutlinesLayer); allOutlinesLayer = null; }
+  clearHover();
+  geometryCache.clear();
+  _lastOutlineArgs = null;
+  _lastSelectedFeature = null;
+}
+
+function clearResults() {
+  document.getElementById('feature-list').innerHTML = '';
+  document.getElementById('filter-bar').style.display = 'none';
+  document.getElementById('geometry-output').innerHTML = '<div class="empty-state">Loading...</div>';
+}
+function showError(msg) {
+  setStatus(msg, 'error');
+  document.getElementById('geometry-output').innerHTML = `<div class="error-state">${esc(msg)}</div>`;
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function copyText(btn, textareaId) {
+  const ta = document.getElementById(textareaId);
+  const text = ta.value;
+  const onSuccess = () => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(onSuccess).catch(() => {
+      // Fallback for insecure contexts (file://)
+      ta.select();
+      document.execCommand('copy');
+      onSuccess();
+    });
+  } else {
+    ta.select();
+    document.execCommand('copy');
+    onSuccess();
+  }
+}
+
+function handleFetch() {
+  const typeSelect = document.getElementById('osm-type');
+  const idInput = document.getElementById('osm-id');
+  const idRaw = idInput.value.trim();
+  if (!idRaw) { setStatus('Please enter an ID', 'error'); return; }
+
+  // Parse "type/id" or "t/id" or "tid" or just "id"
+  const TYPE_MAP = { n: 'node', node: 'node', w: 'way', way: 'way', r: 'relation', rel: 'relation', relation: 'relation' };
+  const match = idRaw.match(/^([a-z]+)\/?(\d+)$/i);
+  let id, type;
+  if (match) {
+    const prefix = match[1].toLowerCase();
+    if (!TYPE_MAP[prefix]) {
+      setStatus(`Unknown type "${match[1]}" — use node, way, or relation (n, w, r)`, 'error');
+      return;
+    }
+    type = TYPE_MAP[prefix];
+    id = match[2];
+    typeSelect.value = type;
+    idInput.value = id;
+  } else if (/^\d+$/.test(idRaw)) {
+    id = idRaw;
+    type = typeSelect.value;
+  } else {
+    setStatus('Invalid input — enter a numeric ID or type/id (e.g. w/123, relation/456)', 'error');
+    return;
+  }
+  fetchByOsmId(type, id);
+}
+
+// Enter key in ID field
+document.getElementById('osm-id').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') handleFetch();
+});
+
+// --- Deep link: read hash on load and on hash change ---
+function loadFromHash() {
+  const hash = location.hash.replace(/^#\/?/, '');
+  if (!hash) return;
+  const TYPE_ALIASES = { n: 'node', node: 'node', w: 'way', way: 'way', r: 'relation', rel: 'relation', relation: 'relation' };
+  const m = hash.match(/^([a-z]+)\/(\d+)$/i);
+  if (!m) return;
+  const type = TYPE_ALIASES[m[1].toLowerCase()];
+  if (!type) return;
+  const id = m[2];
+  document.getElementById('osm-type').value = type;
+  document.getElementById('osm-id').value = id;
+  fetchByOsmId(type, id);
+}
+loadFromHash();
+window.addEventListener('hashchange', loadFromHash);
+</script>
+</body>
+</html>

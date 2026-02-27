@@ -3,4 +3,16 @@ layout: null
 permalink: /404.html
 ---
 
+<script>
+// Redirect /osmviewer/type/id → /osmviewer/#type/id
+(function() {
+  var path = window.location.pathname;
+  var prefix = '/osmviewer/';
+  if (path.indexOf(prefix) === 0 && path.length > prefix.length) {
+    var fragment = path.substring(prefix.length).replace(/\/$/, '');
+    window.location.replace(prefix + '#' + fragment);
+    return;
+  }
+})();
+</script>
 {% include 404.html %}
