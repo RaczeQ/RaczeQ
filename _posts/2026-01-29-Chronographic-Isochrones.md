@@ -372,3 +372,4 @@ Overall I'm happy with how the plots turned out and was even able to prepare an 
 LinkedIn:
 
 - [First tests with isochrones](https://www.linkedin.com/posts/raczyckikamil_i-have-stumbled-upon-john-nelsons-time-warp-activity-7393626316593467393-tFNW)
+- [Discussion about this blog post](https://www.linkedin.com/feed/update/urn:li:activity:7422743930636750848/)
