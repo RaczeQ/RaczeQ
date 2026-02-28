@@ -878,12 +878,18 @@ function mergeFeatures(geojson, type, id, rawMembers) {
   if (features.length === 0) return null;
   if (features.length === 1) return features[0];
 
-  // For relations: build set of feature IDs to skip based on member role.
-  // outer/inner ways and subarea relations are already merged into the
-  // relation's own Polygon by osmtogeojson — skip them from the map geometry.
+  // OSM API /full.json includes ALL sub-elements (incl. tagged nodes within ways).
+  // Only include features that belong to the queried element:
+  // - For ways: only the way itself (skip constituent tagged nodes)
+  // - For relations: only actual members + the relation itself
+  const memberIds = new Set();
   const skipIds = new Set();
-  if (type === 'relation' && Array.isArray(rawMembers)) {
+  if (type === 'way') {
+    memberIds.add(`way/${id}`);
+  } else if (type === 'relation' && Array.isArray(rawMembers)) {
+    memberIds.add(`${type}/${id}`);
     for (const m of rawMembers) {
+      memberIds.add(`${m.type}/${m.ref}`);
       if (m.role === 'outer' || m.role === 'inner' || m.role === 'subarea') {
         skipIds.add(`${m.type}/${m.ref}`);
       }
@@ -894,9 +900,11 @@ function mergeFeatures(geojson, type, id, rawMembers) {
   const parts = [];
   for (const f of features) {
     if (!f.geometry) continue;
-    // Skip features whose role is outer/inner/subarea (already in relation polygon)
-    if (skipIds.size > 0 && f.id) {
+    if (f.id) {
       const cleanId = String(f.id).replace('/_fullGeom', '');
+      // Skip features that don't belong to the queried element (e.g. tagged nodes within ways)
+      if (memberIds.size > 0 && !memberIds.has(cleanId)) continue;
+      // Skip outer/inner/subarea members (already merged into relation polygon by osmtogeojson)
       if (skipIds.has(cleanId)) continue;
     }
     const g = f.geometry;
@@ -1014,8 +1022,6 @@ function showAllOutlines(elements, featureMap) {
       }
     }
   });
-  console.log(`Outlines: ${elements.length - bboxOnly.length} with geometry, ${bboxOnly.length} bbox-only` +
-    (bboxOnly.length ? ': ' + bboxOnly.join(', ') : ''));
   if (layers.length > 0) {
     allOutlinesLayer = L.layerGroup(layers).addTo(map);
   }
@@ -1270,7 +1276,7 @@ function buildFeatureItem(el, featureMap, container) {
     </div>
     ${name ? `<div class="feature-item-name" title="${esc(name)}">${esc(name)}</div>` : ''}
     ${nameEn && nameEn !== name ? `<div class="feature-item-name-en" title="${esc(nameEn)}">${esc(nameEn)}</div>` : ''}
-    ${realGeom ? geomTypeHtml(feature, el) : ''}
+    ${realGeom && el.type !== 'relation' ? geomTypeHtml(feature, el) : ''}
   `;
 
   div.addEventListener('mouseenter', () => {
@@ -1355,7 +1361,7 @@ function buildFeatureItem(el, featureMap, container) {
           const bboxPad = (window.innerWidth <= 768)
             ? { paddingBottomRight: L.point(0, Math.round(document.getElementById('panel').parentElement.offsetHeight * 0.5)) }
             : {};
-          map.fitBounds(geojsonLayer.getBounds().pad(0.3), bboxPad);
+          map.fitBounds(geojsonLayer.getBounds().pad(0.3), { maxZoom: 18, animate: false, ...bboxPad });
         }
         // For relations: OSM API /full.json first (osmtogeojson needs all member
         // elements to merge ways into polygons). Overpass `out geom` only returns
@@ -1692,25 +1698,32 @@ function displayGeometry(feature, rawTags, osmType, osmId, rawMembers) {
     })
   }).addTo(map);
 
-  // Mobile: snap panel to half + switch to Details BEFORE fitBounds so they animate together
+  // Mobile: snap panel to half + switch to Details
   if (window.innerWidth <= 768 && window.mobileSheetSnap) window.mobileSheetSnap('half');
   if (window.mobileSheetGoToPage) window.mobileSheetGoToPage(1);
 
-  // On mobile, offset map center so geometry is above the panel (at 'half' = 50%)
-  const mobileBottomPad = (window.innerWidth <= 768)
-    ? Math.round(document.getElementById('panel').parentElement.offsetHeight * 0.5)
-    : 0;
+  // Fit map to geometry bounds
+  const fitGeometry = () => {
+    if (!geojsonLayer) return;
+    map.invalidateSize({ animate: false });
+    const mobileBottomPad = (window.innerWidth <= 768)
+      ? Math.round(document.getElementById('panel').parentElement.offsetHeight * 0.5)
+      : 0;
+    const gb = geojsonLayer.getBounds();
+    if (gb.getNorthEast().equals(gb.getSouthWest())) {
+      map.setView(gb.getCenter(), 18, { animate: false });
+      if (mobileBottomPad) map.panBy([0, mobileBottomPad / 2], { animate: false });
+    } else {
+      const fitOpts = { maxZoom: 18 };
+      if (mobileBottomPad) fitOpts.paddingBottomRight = L.point(0, mobileBottomPad);
+      map.fitBounds(gb.pad(0.2), fitOpts);
+    }
+  };
 
-  const gb = geojsonLayer.getBounds();
-  if (gb.getNorthEast().equals(gb.getSouthWest())) {
-    // Point geometry — zoom in to 18 (or keep if already closer)
-    map.setView(gb.getCenter(), Math.max(map.getZoom(), 18));
-    if (mobileBottomPad) map.panBy([0, mobileBottomPad / 2], { animate: false });
-  } else {
-    map.fitBounds(gb.pad(0.2), mobileBottomPad
-      ? { paddingBottomRight: L.point(0, mobileBottomPad) }
-      : {}
-    );
+  fitGeometry();
+  if (window.innerWidth <= 768) {
+    // Re-fit after mobile panel transition (0.3s) for correct container size
+    setTimeout(fitGeometry, 400);
   }
 
   // Bbox hover preview on map
@@ -1733,21 +1746,7 @@ function displayGeometry(feature, rawTags, osmType, osmId, rawMembers) {
   // Recenter button
   const recenterBtn = document.getElementById('recenter-btn');
   if (recenterBtn && geojsonLayer) {
-    recenterBtn.addEventListener('click', () => {
-      const gb = geojsonLayer.getBounds();
-      const mobileBottomPad = (window.innerWidth <= 768)
-        ? Math.round(document.getElementById('panel').parentElement.offsetHeight * 0.5)
-        : 0;
-      if (gb.getNorthEast().equals(gb.getSouthWest())) {
-        map.setView(gb.getCenter(), Math.max(map.getZoom(), 18));
-        if (mobileBottomPad) map.panBy([0, mobileBottomPad / 2], { animate: false });
-      } else {
-        map.fitBounds(gb.pad(0.2), mobileBottomPad
-          ? { paddingBottomRight: L.point(0, mobileBottomPad) }
-          : {}
-        );
-      }
-    });
+    recenterBtn.addEventListener('click', fitGeometry);
   }
 }
 
@@ -1975,5 +1974,6 @@ window.addEventListener('hashchange', loadFromHash);
 </script>
 </body>
 </html>
+
 
 
