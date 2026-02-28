@@ -278,7 +278,7 @@ permalink: /osmviewer/
 
     #panel {
       position: absolute; bottom: 0; left: 0; right: 0;
-      width: 100%; height: 85vh;
+      width: 100%; height: calc(100% - 8px);
       border-left: none; border-top: none;
       border-radius: 12px 12px 0 0;
       box-shadow: 0 -2px 10px rgba(0,0,0,0.15);
@@ -312,6 +312,7 @@ permalink: /osmviewer/
 
     /* --- Horizontal scroll-snap pages (mobile) --- */
     .sheet-pages {
+      flex: 1; min-height: 0;
       flex-direction: row;
       overflow-x: auto; scroll-snap-type: x mandatory;
       -webkit-overflow-scrolling: touch;
@@ -1858,3 +1859,4 @@ window.addEventListener('hashchange', loadFromHash);
 </script>
 </body>
 </html>
+
