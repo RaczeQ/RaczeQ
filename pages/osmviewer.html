@@ -16,7 +16,7 @@ permalink: /osmviewer/
 <link rel="shortcut icon" type="image/x-icon" href="/assets/favicon.ico">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
 
   #toolbar {
     display: flex; align-items: center; gap: 8px;
@@ -278,7 +278,7 @@ permalink: /osmviewer/
 
     #panel {
       position: absolute; bottom: 0; left: 0; right: 0;
-      width: 100%; height: calc(100% - 8px);
+      width: 100%; height: 100%;
       border-left: none; border-top: none;
       border-radius: 12px 12px 0 0;
       box-shadow: 0 -2px 10px rgba(0,0,0,0.15);
@@ -1823,6 +1823,9 @@ window.addEventListener('hashchange', loadFromHash);
 
   // FAB click: restore sheet
   if (fab) fab.addEventListener('click', () => window.mobileSheetSnap('half'));
+
+  // Show FAB on load (panel starts collapsed via CSS)
+  if (window.innerWidth <= 768) updateFab('collapsed');
 
   // Invalidate map size after sheet transitions
   panel.addEventListener('transitionend', () => { map.invalidateSize(); });
