@@ -253,6 +253,96 @@ permalink: /osmviewer/
     padding: 8px 14px; cursor: pointer; font-size: 13px; color: #333;
   }
   #context-menu .ctx-item:hover { background: #e8f4fd; }
+
+  /* Desktop: hide sheet handle, tabs, and FAB */
+  .sheet-handle { display: none; }
+  .sheet-tabs { display: none; }
+  #sheet-fab { display: none; }
+  .sheet-pages { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+  .sheet-page { display: flex; flex-direction: column; min-height: 0; }
+  #page-list { flex-shrink: 0; }
+  #page-details { flex: 1; min-height: 0; }
+
+  /* --- Mobile bottom sheet layout --- */
+  @media (max-width: 768px) {
+    #toolbar { padding: 6px 8px; gap: 4px; }
+    #toolbar .title { display: none; }
+    #toolbar input { width: 100px; }
+    #toolbar select, #toolbar input, #toolbar button {
+      padding: 5px 8px; font-size: 13px;
+    }
+
+    #main { position: relative; overflow: hidden; }
+
+    #map { width: 100%; height: 100%; }
+
+    #panel {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      width: 100%; height: 85vh;
+      border-left: none; border-top: none;
+      border-radius: 12px 12px 0 0;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.15);
+      transform: translateY(calc(100% - 40px));
+      transition: transform 0.3s ease;
+      z-index: 1000;
+    }
+
+    .sheet-handle {
+      display: flex !important;
+      justify-content: center; padding: 10px 0 6px;
+      cursor: grab; flex-shrink: 0;
+    }
+    .sheet-handle span {
+      display: block; width: 32px; height: 4px;
+      background: #ccc; border-radius: 2px;
+    }
+
+    /* --- Sheet page tabs (mobile) --- */
+    .sheet-tabs {
+      display: flex; border-bottom: 1px solid #ddd; background: #f5f6f7; flex-shrink: 0;
+    }
+    .sheet-tab {
+      flex: 1; padding: 8px; font-size: 12px; font-weight: 600; text-align: center;
+      border: none; background: none; color: #999;
+      border-bottom: 2px solid transparent; cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .sheet-tab.active { color: #3498db; border-bottom-color: #3498db; }
+
+    /* --- Horizontal scroll-snap pages (mobile) --- */
+    .sheet-pages {
+      flex-direction: row;
+      overflow-x: auto; scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .sheet-pages::-webkit-scrollbar { display: none; }
+
+    .sheet-page {
+      min-width: 100%; width: 0; flex-shrink: 0; scroll-snap-align: start;
+      overflow-y: auto; overflow-x: hidden;
+    }
+
+    #page-list #feature-list { max-height: none; flex: 1; overflow-y: auto; }
+    #page-details #geometry-output { flex: 1; overflow-y: auto; }
+
+    .output-section textarea { min-height: 80px; }
+
+    /* --- FAB to restore collapsed sheet --- */
+    #sheet-fab {
+      display: none; /* shown via JS when collapsed */
+      position: absolute; bottom: 56px; right: 12px;
+      z-index: 999;
+      width: 44px; height: 44px; border-radius: 50%;
+      border: none; background: #3498db; color: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      cursor: pointer; align-items: center; justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #sheet-fab.visible { display: flex; }
+    #sheet-fab:active { background: #2980b9; transform: scale(0.93); }
+  }
 </style>
 </head>
 <body>
@@ -287,13 +377,27 @@ permalink: /osmviewer/
 
 <div id="main">
   <div id="map"></div>
+  <button id="sheet-fab" aria-label="Show panel">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 13l7-7 7 7" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
   <div id="panel">
+    <div class="sheet-handle"><span></span></div>
     <div id="panel-header">Results</div>
-    <div id="filter-bar" style="display:none"></div>
-    <div id="feature-list"></div>
-    <div id="geometry-output">
-      <div class="empty-state">
-        Right-click the map to query features,<br>or enter an OSM type + ID above.
+    <div class="sheet-tabs">
+      <button class="sheet-tab active" data-page="0">List</button>
+      <button class="sheet-tab" data-page="1">Details</button>
+    </div>
+    <div class="sheet-pages">
+      <div class="sheet-page" id="page-list">
+        <div id="filter-bar" style="display:none"></div>
+        <div id="feature-list"></div>
+      </div>
+      <div class="sheet-page" id="page-details">
+        <div id="geometry-output">
+          <div class="empty-state">
+            Right-click the map to query features,<br>or enter an OSM type + ID above.
+          </div>
+        </div>
       </div>
     </div>
     <div id="status">Ready</div>
@@ -1000,6 +1104,10 @@ function showFeatureList(elements, featureMap, queryLat, queryLng) {
   };
 
   renderList();
+
+  // Mobile: auto-expand bottom sheet to show feature list
+  if (window.innerWidth <= 768 && window.mobileSheetSnap) window.mobileSheetSnap('half');
+  if (window.mobileSheetGoToPage) window.mobileSheetGoToPage(0);
 }
 
 // OSM tag → human-readable label (from openstreetmap-website en-GB locale)
@@ -1164,6 +1272,7 @@ function buildFeatureItem(el, featureMap, container) {
             Fetching geometry\u2026
           </div>`;
         setStatus(`Fetching exact geometry for ${key}...`, 'loading');
+        if (window.mobileSheetGoToPage) window.mobileSheetGoToPage(1);
         if (geojsonLayer) { map.removeLayer(geojsonLayer); geojsonLayer = null; }
         const bboxFeat = bboxFeatureFromElement(el);
         if (bboxFeat) {
@@ -1527,6 +1636,10 @@ function displayGeometry(feature, rawTags, osmType, osmId, rawMembers) {
       if (bboxLayer) { map.removeLayer(bboxLayer); bboxLayer = null; }
     });
   }
+
+  // Mobile: auto-expand bottom sheet and switch to Details page
+  if (window.innerWidth <= 768 && window.mobileSheetSnap) window.mobileSheetSnap('half');
+  if (window.mobileSheetGoToPage) window.mobileSheetGoToPage(1);
 }
 
 // --- Helpers ---
@@ -1549,10 +1662,12 @@ function clearResults() {
   document.getElementById('feature-list').innerHTML = '';
   document.getElementById('filter-bar').style.display = 'none';
   document.getElementById('geometry-output').innerHTML = '<div class="empty-state">Loading...</div>';
+  if (window.mobileSheetGoToPage) window.mobileSheetGoToPage(0);
 }
 function showError(msg) {
   setStatus(msg, 'error');
   document.getElementById('geometry-output').innerHTML = `<div class="error-state">${esc(msg)}</div>`;
+  if (window.mobileSheetGoToPage) window.mobileSheetGoToPage(1);
 }
 
 function esc(s) {
@@ -1634,6 +1749,112 @@ function loadFromHash() {
 }
 loadFromHash();
 window.addEventListener('hashchange', loadFromHash);
+
+// --- Mobile bottom sheet drag ---
+(function() {
+  const panel = document.getElementById('panel');
+  const handle = panel.querySelector('.sheet-handle');
+  if (!handle) return;
+
+  let startY, startTranslate, dragging = false;
+  const sheetH = () => panel.offsetHeight;
+
+  function getTranslateY() {
+    const m = new DOMMatrix(getComputedStyle(panel).transform);
+    return m.m42;
+  }
+
+  function setTranslateY(y) {
+    panel.style.transform = `translateY(${y}px)`;
+  }
+
+  const fab = document.getElementById('sheet-fab');
+
+  function updateFab(position) {
+    if (fab) fab.classList.toggle('visible', position === 'collapsed');
+  }
+
+  window.mobileSheetSnap = function(position) {
+    panel.style.transition = 'transform 0.3s ease';
+    const h = sheetH();
+    if (position === 'collapsed') setTranslateY(h - 40);
+    else if (position === 'half') setTranslateY(h * 0.5);
+    else setTranslateY(0);
+    panel.dataset.sheetState = position;
+    updateFab(position);
+  };
+
+  handle.addEventListener('touchstart', (e) => {
+    if (window.innerWidth > 768) return;
+    dragging = true;
+    startY = e.touches[0].clientY;
+    startTranslate = getTranslateY();
+    panel.style.transition = 'none';
+  }, { passive: true });
+
+  window.addEventListener('touchmove', (e) => {
+    if (!dragging) return;
+    const dy = e.touches[0].clientY - startY;
+    const newY = Math.max(0, Math.min(sheetH() - 40, startTranslate + dy));
+    setTranslateY(newY);
+  }, { passive: true });
+
+  window.addEventListener('touchend', () => {
+    if (!dragging) return;
+    dragging = false;
+    panel.style.transition = 'transform 0.3s ease';
+    const y = getTranslateY();
+    const h = sheetH();
+    const ratio = y / h;
+    if (ratio > 0.7) window.mobileSheetSnap('collapsed');
+    else if (ratio > 0.3) window.mobileSheetSnap('half');
+    else window.mobileSheetSnap('expanded');
+  });
+
+  // Click handle to cycle states
+  handle.addEventListener('click', () => {
+    if (window.innerWidth > 768) return;
+    const state = panel.dataset.sheetState || 'collapsed';
+    if (state === 'collapsed') window.mobileSheetSnap('half');
+    else if (state === 'half') window.mobileSheetSnap('expanded');
+    else window.mobileSheetSnap('collapsed');
+  });
+
+  // FAB click: restore sheet
+  if (fab) fab.addEventListener('click', () => window.mobileSheetSnap('half'));
+
+  // Invalidate map size after sheet transitions
+  panel.addEventListener('transitionend', () => { map.invalidateSize(); });
+})();
+
+// --- Mobile sheet page swipe navigation ---
+(function() {
+  const pagesEl = document.querySelector('.sheet-pages');
+  const tabs = document.querySelectorAll('.sheet-tab');
+  if (!pagesEl || tabs.length === 0) return;
+
+  function updateActiveTab() {
+    const pageIndex = Math.round(pagesEl.scrollLeft / pagesEl.offsetWidth);
+    tabs.forEach((tab, i) => tab.classList.toggle('active', i === pageIndex));
+  }
+
+  pagesEl.addEventListener('scroll', updateActiveTab, { passive: true });
+
+  tabs.forEach((tab, i) => {
+    tab.addEventListener('click', () => {
+      pagesEl.scrollTo({ left: i * pagesEl.offsetWidth, behavior: 'smooth' });
+    });
+  });
+
+  window.mobileSheetGoToPage = function(pageIndex) {
+    if (window.innerWidth > 768) return;
+    pagesEl.scrollTo({ left: pageIndex * pagesEl.offsetWidth, behavior: 'smooth' });
+  };
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 768) pagesEl.scrollLeft = 0;
+  });
+})();
 </script>
 </body>
 </html>
