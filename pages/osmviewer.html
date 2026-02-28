@@ -278,12 +278,11 @@ permalink: /osmviewer/
 
     #panel {
       position: absolute; bottom: 0; left: 0; right: 0;
-      width: 100%; height: 100%;
+      width: 100%; height: 20px;
       border-left: none; border-top: none;
       border-radius: 12px 12px 0 0;
       box-shadow: 0 -2px 10px rgba(0,0,0,0.15);
-      transform: translateY(calc(100% - 40px));
-      transition: transform 0.3s ease;
+      transition: height 0.3s ease;
       z-index: 1000;
     }
 
@@ -333,7 +332,7 @@ permalink: /osmviewer/
     /* --- FAB to restore collapsed sheet --- */
     #sheet-fab {
       display: none; /* shown via JS when collapsed */
-      position: absolute; bottom: 56px; right: 12px;
+      position: absolute; bottom: 32px; right: 12px;
       z-index: 999;
       width: 44px; height: 44px; border-radius: 50%;
       border: none; background: #3498db; color: #fff;
@@ -1757,17 +1756,7 @@ window.addEventListener('hashchange', loadFromHash);
   const handle = panel.querySelector('.sheet-handle');
   if (!handle) return;
 
-  let startY, startTranslate, dragging = false;
-  const sheetH = () => panel.offsetHeight;
-
-  function getTranslateY() {
-    const m = new DOMMatrix(getComputedStyle(panel).transform);
-    return m.m42;
-  }
-
-  function setTranslateY(y) {
-    panel.style.transform = `translateY(${y}px)`;
-  }
+  let startY, startHeight, dragging = false;
 
   const fab = document.getElementById('sheet-fab');
 
@@ -1776,11 +1765,11 @@ window.addEventListener('hashchange', loadFromHash);
   }
 
   window.mobileSheetSnap = function(position) {
-    panel.style.transition = 'transform 0.3s ease';
-    const h = sheetH();
-    if (position === 'collapsed') setTranslateY(h - 40);
-    else if (position === 'half') setTranslateY(h * 0.5);
-    else setTranslateY(0);
+    panel.style.transition = 'height 0.3s ease';
+    const parentH = panel.parentElement.offsetHeight;
+    if (position === 'collapsed') panel.style.height = '20px';
+    else if (position === 'half') panel.style.height = Math.round(parentH * 0.5) + 'px';
+    else panel.style.height = parentH + 'px';
     panel.dataset.sheetState = position;
     updateFab(position);
   };
@@ -1789,26 +1778,26 @@ window.addEventListener('hashchange', loadFromHash);
     if (window.innerWidth > 768) return;
     dragging = true;
     startY = e.touches[0].clientY;
-    startTranslate = getTranslateY();
+    startHeight = panel.offsetHeight;
     panel.style.transition = 'none';
   }, { passive: true });
 
   window.addEventListener('touchmove', (e) => {
     if (!dragging) return;
     const dy = e.touches[0].clientY - startY;
-    const newY = Math.max(0, Math.min(sheetH() - 40, startTranslate + dy));
-    setTranslateY(newY);
+    const parentH = panel.parentElement.offsetHeight;
+    const newH = Math.max(20, Math.min(parentH, startHeight - dy));
+    panel.style.height = newH + 'px';
   }, { passive: true });
 
   window.addEventListener('touchend', () => {
     if (!dragging) return;
     dragging = false;
-    panel.style.transition = 'transform 0.3s ease';
-    const y = getTranslateY();
-    const h = sheetH();
-    const ratio = y / h;
-    if (ratio > 0.7) window.mobileSheetSnap('collapsed');
-    else if (ratio > 0.3) window.mobileSheetSnap('half');
+    const h = panel.offsetHeight;
+    const parentH = panel.parentElement.offsetHeight;
+    const ratio = h / parentH;
+    if (ratio < 0.25) window.mobileSheetSnap('collapsed');
+    else if (ratio < 0.75) window.mobileSheetSnap('half');
     else window.mobileSheetSnap('expanded');
   });
 
@@ -1862,4 +1851,5 @@ window.addEventListener('hashchange', loadFromHash);
 </script>
 </body>
 </html>
+
 
