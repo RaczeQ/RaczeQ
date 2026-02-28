@@ -164,6 +164,12 @@ permalink: /osmviewer/
     display: flex; align-items: center; gap: 8px;
     font-size: 14px; font-weight: 700;
   }
+  .recenter-btn {
+    margin-left: auto; border: none; background: none; cursor: pointer;
+    color: #888; padding: 4px; border-radius: 4px; display: flex; align-items: center;
+    transition: color 0.15s, background 0.15s;
+  }
+  .recenter-btn:hover { color: #3498db; background: #edf2f7; }
   .feature-header-line1 .type-badge {
     font-size: 13px; padding: 4px 12px; border-radius: 12px; border-width: 2px;
   }
@@ -228,6 +234,29 @@ permalink: /osmviewer/
 
   .empty-state {
     padding: 30px 20px; text-align: center; color: #aaa; font-size: 13px; line-height: 1.5;
+  }
+  .welcome-state {
+    padding: 28px 24px; color: #666; font-size: 13px; line-height: 1.7;
+  }
+  .welcome-state h2 {
+    font-size: 16px; font-weight: 700; color: #2c3e50; margin-bottom: 16px;
+  }
+  .welcome-state p { margin-bottom: 12px; }
+  .welcome-state .hint {
+    display: flex; align-items: flex-start; gap: 10px; text-align: left;
+    margin-bottom: 10px; padding: 8px 10px; background: #f5f7fa; border-radius: 6px;
+  }
+  .welcome-state .hint-icon {
+    flex-shrink: 0; width: 20px; height: 20px; margin-top: 1px;
+  }
+  .welcome-state .hint strong { color: #2c3e50; }
+  .welcome-state .hint code {
+    background: #e8ecf0; padding: 1px 5px; border-radius: 3px; font-size: 12px; color: #2c3e50;
+  }
+  .welcome-state .mobile-hint { display: none; }
+  @media (max-width: 768px) {
+    .welcome-state .desktop-hint { display: none; }
+    .welcome-state .mobile-hint { display: flex; }
   }
   .error-state {
     padding: 30px 20px; text-align: center; color: #c0392b; font-size: 14px; font-weight: 600; line-height: 1.5;
@@ -390,13 +419,27 @@ permalink: /osmviewer/
     <div class="sheet-pages">
       <div class="sheet-page" id="page-list">
         <div id="filter-bar" style="display:none"></div>
-        <div id="feature-list"></div>
+        <div id="feature-list">
+          <div class="welcome-state">
+            <h2>OSM Geometry Viewer</h2>
+            <div class="hint">
+              <svg class="hint-icon" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="#3498db" stroke-width="1.5"/><path d="M9 7h2v1H9zm0 3h2v4H9z" fill="#3498db"/></svg>
+              <span><strong>Search by ID</strong><br>Enter an OSM object in the toolbar or URL, e.g. <code>way/123456</code> or <code>relation/789</code></span>
+            </div>
+            <div class="hint desktop-hint">
+              <svg class="hint-icon" viewBox="0 0 20 20" fill="none"><path d="M10 4v8m0 0l-3-3m3 3l3-3" stroke="#3498db" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="15" r="1.5" fill="#3498db"/></svg>
+              <span><strong>Query the map</strong><br>Right-click anywhere to discover features at that point</span>
+            </div>
+            <div class="hint mobile-hint">
+              <svg class="hint-icon" viewBox="0 0 20 20" fill="none"><path d="M10 4v8m0 0l-3-3m3 3l3-3" stroke="#3498db" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="15" r="1.5" fill="#3498db"/></svg>
+              <span><strong>Query the map</strong><br>Long-press anywhere to discover features at that point</span>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="sheet-page" id="page-details">
         <div id="geometry-output">
-          <div class="empty-state">
-            Right-click the map to query features,<br>or enter an OSM type + ID above.
-          </div>
+          <div class="empty-state">Select a feature to view its geometry and details.</div>
         </div>
       </div>
     </div>
@@ -538,7 +581,7 @@ document.getElementById('basemap-style').addEventListener('change', function() {
     const s = _lastSelectedFeature;
     if (geojsonLayer) { map.removeLayer(geojsonLayer); geojsonLayer = null; }
     const t = tc();
-    const rf = [s.feature, ...wayFeaturesFromMembers(s.rawMembers)];
+    const rf = hasLineOrPolyGeometry(s.feature.geometry) ? [s.feature] : [s.feature, ...wayFeaturesFromMembers(s.rawMembers)];
     geojsonLayer = L.geoJSON({ type: 'FeatureCollection', features: rf }, {
       style: { color: t.selected, weight: t.selectedWeight, fillColor: t.selected, fillOpacity: t.selectedFill },
       pointToLayer: (f, latlng) => L.circleMarker(latlng, {
@@ -619,6 +662,13 @@ function preserveRawMembers(elements) {
     if (el.members) el._rawMembers = JSON.parse(JSON.stringify(el.members));
   }
 }
+function hasLineOrPolyGeometry(geom) {
+  if (!geom) return false;
+  const t = geom.type;
+  if (t === 'LineString' || t === 'MultiLineString' || t === 'Polygon' || t === 'MultiPolygon') return true;
+  if (t === 'GeometryCollection') return geom.geometries.some(g => hasLineOrPolyGeometry(g));
+  return false;
+}
 function wayFeaturesFromMembers(rawMembers) {
   if (!Array.isArray(rawMembers)) return [];
   const out = [];
@@ -646,7 +696,7 @@ async function fetchByOsmId(type, id) {
     enrichMembersFromFull(mainEl, data.elements);
     preserveRawMembers(data.elements);
     const geojson = osmtogeojson(data);
-    const merged = mergeFeatures(geojson, type, id);
+    const merged = mergeFeatures(geojson, type, id, mainEl?._rawMembers);
     if (!merged) {
       showError(`Could not convert ${type}/${id} to geometry`);
       return;
@@ -672,7 +722,7 @@ async function fetchByOsmId(type, id) {
       setStatus(`Processing geometry for ${type}/${id}...`, 'loading');
       preserveRawMembers(data.elements);
       const geojson = osmtogeojson(data);
-      const merged = mergeFeatures(geojson, type, id);
+      const merged = mergeFeatures(geojson, type, id, data.elements[0]?._rawMembers);
       if (!merged) {
         showError(`Could not convert ${type}/${id} to geometry`);
         return;
@@ -778,18 +828,14 @@ async function queryFeaturesAtPoint(lat, lng) {
       const memberKeys = new Set(rawM.filter(m => m.type && m.ref).map(m => `${m.type}/${m.ref}`));
       const memberFeatures = geojson.features.filter(f => f.id && memberKeys.has(f.id));
       if (memberFeatures.length > 0) {
-        const m = mergeFeatures({ features: memberFeatures }, el.type, el.id);
+        const m = mergeFeatures({ features: memberFeatures }, el.type, el.id, rawM);
         if (m) featureMap.set(key, m);
       }
     }
     showFeatureList(filtered, featureMap, lat, lng);
-    // Remove spinner
+    // Remove spinner and query buffer
     if (markerLayer) { map.removeLayer(markerLayer); markerLayer = null; }
-    // Keep buffer but make it static
-    if (queryBufferLayer) {
-      const el = queryBufferLayer.getElement();
-      if (el) { el.classList.remove('query-buffer'); el.classList.add('query-buffer-static'); }
-    }
+    if (queryBufferLayer) { map.removeLayer(queryBufferLayer); queryBufferLayer = null; }
     // Show all feature outlines on the map (respect hide-unnamed filter)
     const outlineElements = hideUnnamed ? filtered.filter(el => el.tags && el.tags.name) : filtered;
     showAllOutlines(outlineElements, featureMap);
@@ -827,15 +873,32 @@ function hasRealGeometry(feature, el) {
 // osmtogeojson splits route relations into separate way features;
 // this merges them back into one feature with a combined geometry.
 // Stores original member features in ._memberFeatures for per-member tag output.
-function mergeFeatures(geojson, type, id) {
+function mergeFeatures(geojson, type, id, rawMembers) {
   const features = geojson.features || [];
   if (features.length === 0) return null;
   if (features.length === 1) return features[0];
+
+  // For relations: build set of feature IDs to skip based on member role.
+  // outer/inner ways and subarea relations are already merged into the
+  // relation's own Polygon by osmtogeojson — skip them from the map geometry.
+  const skipIds = new Set();
+  if (type === 'relation' && Array.isArray(rawMembers)) {
+    for (const m of rawMembers) {
+      if (m.role === 'outer' || m.role === 'inner' || m.role === 'subarea') {
+        skipIds.add(`${m.type}/${m.ref}`);
+      }
+    }
+  }
 
   // Collect all geometries, flatten Multi* types into components
   const parts = [];
   for (const f of features) {
     if (!f.geometry) continue;
+    // Skip features whose role is outer/inner/subarea (already in relation polygon)
+    if (skipIds.size > 0 && f.id) {
+      const cleanId = String(f.id).replace('/_fullGeom', '');
+      if (skipIds.has(cleanId)) continue;
+    }
     const g = f.geometry;
     if (g.type === 'MultiLineString') {
       g.coordinates.forEach(c => parts.push({ type: 'LineString', coords: c }));
@@ -909,7 +972,7 @@ function updateOutlineForKey(key, feature, el) {
   if (!found) return;
   allOutlinesLayer.removeLayer(found);
   const t = tc();
-  const outlineFeats = [feature, ...wayFeaturesFromMembers(el._rawMembers)];
+  const outlineFeats = hasLineOrPolyGeometry(feature.geometry) ? [feature] : [feature, ...wayFeaturesFromMembers(el._rawMembers)];
   const newLayer = L.geoJSON({ type: 'FeatureCollection', features: outlineFeats }, {
     style: { color: t.outline, weight: t.outlineWeight, fill: false, opacity: t.outlineOp },
     pointToLayer: (f, latlng) => L.circleMarker(latlng, { radius: 4, color: t.outline, fill: false, weight: t.outlineWeight, opacity: t.outlineOp })
@@ -932,7 +995,7 @@ function showAllOutlines(elements, featureMap) {
     const feature = cached || featureMap.get(key);
     const realGeom = cached ? true : hasRealGeometry(feature, el);
     if (realGeom) {
-      const outlineFeats = [feature, ...wayFeaturesFromMembers(el._rawMembers)];
+      const outlineFeats = hasLineOrPolyGeometry(feature.geometry) ? [feature] : [feature, ...wayFeaturesFromMembers(el._rawMembers)];
       const lyr = L.geoJSON({ type: 'FeatureCollection', features: outlineFeats }, {
         style: { color: t.outline, weight: t.outlineWeight, fill: false, opacity: t.outlineOp },
         pointToLayer: (f, latlng) => L.circleMarker(latlng, { radius: 4, color: t.outline, fill: false, weight: t.outlineWeight, opacity: t.outlineOp })
@@ -1087,7 +1150,7 @@ function showFeatureList(elements, featureMap, queryLat, queryLng) {
             const hoverFeat = cached || (hasRealGeometry(feat, el) ? feat : null);
             if (hoverFeat) {
               const t = tc();
-              const hoverFeatures = [hoverFeat, ...wayFeaturesFromMembers(el._rawMembers)];
+              const hoverFeatures = hasLineOrPolyGeometry(hoverFeat.geometry) ? [hoverFeat] : [hoverFeat, ...wayFeaturesFromMembers(el._rawMembers)];
               hoverLayer = L.geoJSON({ type: 'FeatureCollection', features: hoverFeatures }, {
                 style: { color: t.hover, weight: t.hoverWeight, fill: false, dashArray: '5,5' },
                 pointToLayer: (f, ll) => L.circleMarker(ll, { radius: 8, color: t.hover, fillColor: t.hover, fillOpacity: 0.6, weight: 2 })
@@ -1105,8 +1168,12 @@ function showFeatureList(elements, featureMap, queryLat, queryLng) {
 
   renderList();
 
-  // Mobile: auto-expand bottom sheet to show feature list
-  if (window.innerWidth <= 768 && window.mobileSheetSnap) window.mobileSheetSnap('half');
+  // Mobile: auto-expand bottom sheet and pan map up to account for panel
+  if (window.innerWidth <= 768 && window.mobileSheetSnap) {
+    window.mobileSheetSnap('half');
+    const panelH = Math.round(document.getElementById('panel').parentElement.offsetHeight * 0.5);
+    map.panBy([0, panelH / 2], { animate: true });
+  }
   if (window.mobileSheetGoToPage) window.mobileSheetGoToPage(0);
 }
 
@@ -1212,7 +1279,7 @@ function buildFeatureItem(el, featureMap, container) {
     const hoverFeat = cached || (realGeom ? feature : null);
     if (hoverFeat) {
       const t = tc();
-      const hoverFeatures = [hoverFeat, ...wayFeaturesFromMembers(el._rawMembers)];
+      const hoverFeatures = hasLineOrPolyGeometry(hoverFeat.geometry) ? [hoverFeat] : [hoverFeat, ...wayFeaturesFromMembers(el._rawMembers)];
       hoverLayer = L.geoJSON({ type: 'FeatureCollection', features: hoverFeatures }, {
         style: { color: t.hover, weight: t.hoverWeight, fill: false, dashArray: '5,5' },
         pointToLayer: (f, latlng) => L.circleMarker(latlng, { radius: 8, color: t.hover, fillColor: t.hover, fillOpacity: 0.6, weight: 2 })
@@ -1242,6 +1309,7 @@ function buildFeatureItem(el, featureMap, container) {
         if (html) div.insertAdjacentHTML('beforeend', html);
       }
     }
+    // Relations: skip pre-loaded geometry (nearby query may return simplified), but allow cache
     if (cached) {
       displayGeometry(cached, el.tags, el.type, el.id, el._rawMembers);
       const flag = div.querySelector('.bbox-flag');
@@ -1249,7 +1317,7 @@ function buildFeatureItem(el, featureMap, container) {
       updateGeomBadge(cached);
       history.replaceState(null, '', `#${key}`);
       setStatus(`Loaded ${key} (cached)`, 'success');
-    } else if (realGeom) {
+    } else if (realGeom && el.type !== 'relation') {
       displayGeometry(feature, el.tags, el.type, el.id, el._rawMembers);
       history.replaceState(null, '', `#${key}`);
       setStatus(`Loaded ${key}`, 'success');
@@ -1284,54 +1352,55 @@ function buildFeatureItem(el, featureMap, container) {
             const pathEl = l.getElement();
             if (pathEl) pathEl.classList.add('query-buffer');
           });
-          map.fitBounds(geojsonLayer.getBounds().pad(0.3));
+          const bboxPad = (window.innerWidth <= 768)
+            ? { paddingBottomRight: L.point(0, Math.round(document.getElementById('panel').parentElement.offsetHeight * 0.5)) }
+            : {};
+          map.fitBounds(geojsonLayer.getBounds().pad(0.3), bboxPad);
         }
-        try {
+        // For relations: OSM API /full.json first (osmtogeojson needs all member
+        // elements to merge ways into polygons). Overpass `out geom` only returns
+        // inline member geometry which may produce LineStrings instead of Polygons.
+        // For ways/nodes: Overpass first (simpler, faster).
+        const useOsmApiFirst = el.type === 'relation';
+        async function fetchViaOverpass() {
           const query = `[out:json][timeout:25];${el.type}(${el.id});out geom;`;
           const data = await overpassQuery(query);
-          if (!data.elements || data.elements.length === 0) {
-            setStatus(`No results for ${key}`, 'error'); return;
-          }
+          if (!data.elements || data.elements.length === 0) throw new Error('No results');
           setStatus(`Processing geometry for ${key}...`, 'loading');
           preserveRawMembers(data.elements);
           const geojson = osmtogeojson(data);
-          const merged = mergeFeatures(geojson, el.type, el.id);
-          if (!merged) {
+          return { merged: mergeFeatures(geojson, el.type, el.id, data.elements[0]?._rawMembers), rawMembers: data.elements[0]?._rawMembers };
+        }
+        async function fetchViaOsmApi() {
+          const data = await fetchFromOsmApi(el.type, el.id);
+          const mainEl = data.elements?.find(e => e.type === el.type && String(e.id) === String(el.id));
+          setStatus(`Processing geometry for ${key}...`, 'loading');
+          enrichMembersFromFull(mainEl, data.elements);
+          preserveRawMembers(data.elements);
+          const geojson = osmtogeojson(data);
+          return { merged: mergeFeatures(geojson, el.type, el.id, mainEl?._rawMembers), rawMembers: mainEl?._rawMembers };
+        }
+        try {
+          let result;
+          try {
+            result = useOsmApiFirst ? await fetchViaOsmApi() : await fetchViaOverpass();
+          } catch (firstErr) {
+            setStatus(`Trying ${useOsmApiFirst ? 'Overpass' : 'OSM API'} for ${key}...`, 'loading');
+            result = useOsmApiFirst ? await fetchViaOverpass() : await fetchViaOsmApi();
+          }
+          if (!result.merged) {
             setStatus(`Could not convert ${key} to geometry`, 'error'); return;
           }
-          geometryCache.set(key, merged);
-          displayGeometry(merged, el.tags, el.type, el.id, data.elements[0]?._rawMembers);
+          geometryCache.set(key, result.merged);
+          displayGeometry(result.merged, el.tags, el.type, el.id, result.rawMembers);
           const flag = div.querySelector('.bbox-flag');
           if (flag) flag.remove();
-          updateGeomBadge(merged);
-          updateOutlineForKey(key, merged, el);
+          updateGeomBadge(result.merged);
+          updateOutlineForKey(key, result.merged, el);
           history.replaceState(null, '', `#${key}`);
           setStatus(`Loaded ${key}`, 'success');
-        } catch (overpassErr) {
-          // Fallback: OSM API v0.6
-          try {
-            setStatus(`Trying OSM API for ${key}...`, 'loading');
-            const data = await fetchFromOsmApi(el.type, el.id);
-            const mainEl = data.elements?.find(e => e.type === el.type && String(e.id) === String(el.id));
-            setStatus(`Processing geometry for ${key}...`, 'loading');
-            enrichMembersFromFull(mainEl, data.elements);
-            preserveRawMembers(data.elements);
-            const geojson = osmtogeojson(data);
-            const merged = mergeFeatures(geojson, el.type, el.id);
-            if (!merged) {
-              setStatus(`Could not convert ${key} to geometry`, 'error'); return;
-            }
-            geometryCache.set(key, merged);
-            displayGeometry(merged, el.tags, el.type, el.id, mainEl?._rawMembers);
-            const flag = div.querySelector('.bbox-flag');
-            if (flag) flag.remove();
-            updateGeomBadge(merged);
-            updateOutlineForKey(key, merged, el);
-            history.replaceState(null, '', `#${key}`);
-            setStatus(`Loaded ${key} (via OSM API)`, 'success');
-          } catch (apiErr) {
-            setStatus(`All sources failed: ${overpassErr.message}`, 'error');
-          }
+        } catch (err) {
+          setStatus(`All sources failed: ${err.message}`, 'error');
         }
       })();
     }
@@ -1355,9 +1424,10 @@ function displayGeometry(feature, rawTags, osmType, osmId, rawMembers) {
   const cleanTags = {};
   for (const [k, v] of tagEntries) cleanTags[k] = v;
 
-  // Build supplementary way member features from raw Overpass members
-  // (osmtogeojson may not include way geometries for some relation types like stop_area)
-  const suppWayFeats = wayFeaturesFromMembers(rawMembers);
+  // Build supplementary way member features only when the merged geometry lacks line/polygon data
+  // (e.g. stop_area relations where osmtogeojson produces only Point features)
+  // For multipolygon/boundary relations, osmtogeojson already merges ways into the polygon — skip.
+  const suppWayFeats = hasLineOrPolyGeometry(feature.geometry) ? [] : wayFeaturesFromMembers(rawMembers);
 
   // Build GeoJSON output: full Feature with tags as properties
   // For merged relations with _memberFeatures, output a FeatureCollection
@@ -1373,8 +1443,12 @@ function displayGeometry(feature, rawTags, osmType, osmId, rawMembers) {
       }
     }
     const relId = osmId ? Number(osmId) : (feature.id ? Number(String(feature.id).split('/')[1]) : null);
+    // Roles to skip in GeoJSON output for relations with polygon geometry
+    // (outer/inner ways + subarea relations are already merged into the polygon)
+    const skipRoles = hasLineOrPolyGeometry(feature.geometry) ? new Set(['outer', 'inner', 'subarea']) : new Set();
     // FeatureCollection with per-member tags + role
-    const memberFeaturesOut = feature._memberFeatures.map(mf => {
+    const memberFeaturesOut = [];
+    for (const mf of feature._memberFeatures) {
       const mProps = mf.properties || {};
       const mClean = {};
       for (const [k, v] of Object.entries(mProps)) {
@@ -1382,20 +1456,23 @@ function displayGeometry(feature, rawTags, osmType, osmId, rawMembers) {
       }
       // Extract role: prefer raw Overpass members, fallback to @relations meta
       const mfCleanId = mf.id ? mf.id.replace('/_fullGeom', '/') : null;
+      let memberRole = '';
       if (mfCleanId && roleMap.has(mfCleanId)) {
-        const role = roleMap.get(mfCleanId);
-        if (role) mClean.role = role;
+        memberRole = roleMap.get(mfCleanId);
       } else if (relId && Array.isArray(mProps['@relations'])) {
         const relEntry = mProps['@relations'].find(r => r.rel === relId);
-        if (relEntry && relEntry.role) mClean.role = relEntry.role;
+        if (relEntry && relEntry.role) memberRole = relEntry.role;
       }
-      return {
+      // Skip outer/inner ways and subarea relations for multipolygon/boundary
+      if (skipRoles.size > 0 && memberRole && skipRoles.has(memberRole)) continue;
+      if (memberRole) mClean.role = memberRole;
+      memberFeaturesOut.push({
         type: 'Feature',
         ...(mfCleanId ? { id: mfCleanId } : {}),
         properties: mClean,
         geometry: mf.geometry
-      };
-    });
+      });
+    }
     // Add way member features with roles from rawMembers
     if (suppWayFeats.length > 0 && Array.isArray(rawMembers)) {
       let wayIdx = 0;
@@ -1569,6 +1646,9 @@ function displayGeometry(feature, rawTags, osmType, osmId, rawMembers) {
         <span class="type-badge ${fType.toLowerCase()}">${fType}</span>
         ${fCategory ? `<span class="category">${esc(fCategory)}</span>` : ''}
         <span class="feat-id">${fNum}</span>
+        <button class="recenter-btn" id="recenter-btn" title="Recenter map on feature">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><path d="M8 1v2.5M8 12.5V15M1 8h2.5M12.5 8H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
       </div>
       ${fName ? `<div class="feature-header-name">${esc(fName)}</div>` : ''}
       ${fNameEn && fNameEn !== fName ? `<div class="feature-header-name-en">${esc(fNameEn)}</div>` : ''}
@@ -1612,12 +1692,25 @@ function displayGeometry(feature, rawTags, osmType, osmId, rawMembers) {
     })
   }).addTo(map);
 
+  // Mobile: snap panel to half + switch to Details BEFORE fitBounds so they animate together
+  if (window.innerWidth <= 768 && window.mobileSheetSnap) window.mobileSheetSnap('half');
+  if (window.mobileSheetGoToPage) window.mobileSheetGoToPage(1);
+
+  // On mobile, offset map center so geometry is above the panel (at 'half' = 50%)
+  const mobileBottomPad = (window.innerWidth <= 768)
+    ? Math.round(document.getElementById('panel').parentElement.offsetHeight * 0.5)
+    : 0;
+
   const gb = geojsonLayer.getBounds();
   if (gb.getNorthEast().equals(gb.getSouthWest())) {
     // Point geometry — zoom in to 18 (or keep if already closer)
     map.setView(gb.getCenter(), Math.max(map.getZoom(), 18));
+    if (mobileBottomPad) map.panBy([0, mobileBottomPad / 2], { animate: false });
   } else {
-    map.fitBounds(gb.pad(0.2));
+    map.fitBounds(gb.pad(0.2), mobileBottomPad
+      ? { paddingBottomRight: L.point(0, mobileBottomPad) }
+      : {}
+    );
   }
 
   // Bbox hover preview on map
@@ -1637,9 +1730,25 @@ function displayGeometry(feature, rawTags, osmType, osmId, rawMembers) {
     });
   }
 
-  // Mobile: auto-expand bottom sheet and switch to Details page
-  if (window.innerWidth <= 768 && window.mobileSheetSnap) window.mobileSheetSnap('half');
-  if (window.mobileSheetGoToPage) window.mobileSheetGoToPage(1);
+  // Recenter button
+  const recenterBtn = document.getElementById('recenter-btn');
+  if (recenterBtn && geojsonLayer) {
+    recenterBtn.addEventListener('click', () => {
+      const gb = geojsonLayer.getBounds();
+      const mobileBottomPad = (window.innerWidth <= 768)
+        ? Math.round(document.getElementById('panel').parentElement.offsetHeight * 0.5)
+        : 0;
+      if (gb.getNorthEast().equals(gb.getSouthWest())) {
+        map.setView(gb.getCenter(), Math.max(map.getZoom(), 18));
+        if (mobileBottomPad) map.panBy([0, mobileBottomPad / 2], { animate: false });
+      } else {
+        map.fitBounds(gb.pad(0.2), mobileBottomPad
+          ? { paddingBottomRight: L.point(0, mobileBottomPad) }
+          : {}
+        );
+      }
+    });
+  }
 }
 
 // --- Helpers ---
@@ -1658,11 +1767,16 @@ function clearMap() {
   _lastSelectedFeature = null;
 }
 
+const WELCOME_HTML = document.getElementById('feature-list').innerHTML;
+
 function clearResults() {
-  document.getElementById('feature-list').innerHTML = '';
+  document.getElementById('feature-list').innerHTML = WELCOME_HTML;
   document.getElementById('filter-bar').style.display = 'none';
   document.getElementById('geometry-output').innerHTML = '<div class="empty-state">Loading...</div>';
-  if (window.mobileSheetGoToPage) window.mobileSheetGoToPage(0);
+  if (window.innerWidth <= 768) {
+    if (window.mobileSheetGoToPage) window.mobileSheetGoToPage(0);
+    if (window.mobileSheetSnap) window.mobileSheetSnap('collapsed');
+  }
 }
 function showError(msg) {
   setStatus(msg, 'error');
@@ -1813,8 +1927,18 @@ window.addEventListener('hashchange', loadFromHash);
   // FAB click: restore sheet
   if (fab) fab.addEventListener('click', () => window.mobileSheetSnap('half'));
 
-  // Show FAB on load (panel starts collapsed via CSS)
-  if (window.innerWidth <= 768) updateFab('collapsed');
+  // Size panel to fit welcome content on mobile
+  if (window.innerWidth <= 768) {
+    panel.style.transition = 'none';
+    panel.style.height = 'auto';
+    const contentH = panel.offsetHeight;
+    const parentH = panel.parentElement.offsetHeight;
+    panel.style.height = '20px';
+    panel.offsetHeight; // force reflow
+    panel.style.transition = 'height 0.3s ease';
+    panel.style.height = Math.min(contentH, parentH) + 'px';
+    panel.dataset.sheetState = 'half';
+  }
 
   // Invalidate map size after sheet transitions
   panel.addEventListener('transitionend', () => { map.invalidateSize(); });
