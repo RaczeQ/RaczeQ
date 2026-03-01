@@ -937,9 +937,9 @@ function mergeFeatures(geojson, type, id, rawMembers) {
     mergedGeometry = { type: 'GeometryCollection', geometries: parts.map(p => ({ type: p.type, coordinates: p.coords })) };
   }
 
-  // Merge properties from all features
-  const mergedProps = {};
-  for (const f of features) Object.assign(mergedProps, f.properties || {});
+  // Use only the main element's own properties (not merged from all members)
+  const mainFeature = features.find(f => f.id && String(f.id).replace('/_fullGeom', '') === `${type}/${id}`);
+  const mergedProps = mainFeature ? { ...(mainFeature.properties || {}) } : {};
 
   const result = {
     type: 'Feature',
@@ -1425,7 +1425,7 @@ function displayGeometry(feature, rawTags, osmType, osmId, rawMembers) {
   const props = feature.properties || {};
   const tags = rawTags ? { ...props, ...rawTags } : props;
   // Filter out osmtogeojson meta keys
-  const tagEntries = Object.entries(tags).filter(([k]) => !k.startsWith('@') && k !== 'id' && k !== 'type');
+  const tagEntries = Object.entries(tags).filter(([k]) => !k.startsWith('@') && k !== 'id' && k !== 'type').sort(([a], [b]) => a.localeCompare(b));
   // Clean tags for GeoJSON properties (no meta keys)
   const cleanTags = {};
   for (const [k, v] of tagEntries) cleanTags[k] = v;
@@ -1974,6 +1974,5 @@ window.addEventListener('hashchange', loadFromHash);
 </script>
 </body>
 </html>
-
 
 
